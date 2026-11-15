@@ -27,25 +27,31 @@ body{background:var(--desk);color:var(--fg);font:14px/1.4 var(--ui);overflow:hid
 #c.draw{cursor:crosshair} #c.text{cursor:text} #c.grabbing{cursor:grabbing}
 #bar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;pointer-events:none;
   padding:0 max(16px,env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
-.tools{pointer-events:auto;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px;background:var(--bar);border:1px solid var(--line);border-radius:12px;padding:5px 6px;max-width:100%}
-.sep{width:1px;height:22px;background:var(--line);margin:0 3px}
+.tools{pointer-events:auto;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:1px;background:var(--bar);border:1px solid var(--line);border-radius:12px;padding:5px 6px;max-width:100%}
+.sep{width:1px;height:22px;background:var(--line);margin:0 2px}
 button{font:inherit;color:var(--fg);background:none;border:0;border-radius:8px;padding:6px 10px;min-height:34px;cursor:pointer}
 button:hover{background:var(--line)}
 button[aria-pressed="true"]{background:var(--fg);color:var(--bar)}
 button:focus-visible{outline:2px solid var(--mine);outline-offset:2px}
 button:disabled{opacity:.35;cursor:default;background:none}
-button.icon{display:grid;place-items:center;padding:6px;min-width:36px}
+button.icon{display:grid;place-items:center;padding:5px;min-width:34px}
 button.primary{background:var(--mine);color:#fff}
 .dot{width:24px;height:24px;min-height:0;padding:3px;border-radius:50%;border:2px solid transparent}
 .dot i{display:block;width:100%;height:100%;border-radius:50%;background:var(--c)}
 .dot[aria-pressed="true"]{background:none;border-color:var(--fg)}
-#inks{display:flex;gap:2px}
+#inks{display:flex;gap:0}
 .corner{position:fixed;top:calc(12px + env(safe-area-inset-top));color:var(--muted);font-size:12px;pointer-events:none;font-variant-numeric:tabular-nums}
 #clock{right:max(16px,env(safe-area-inset-right));display:flex;align-items:center;gap:5px}
 #note{left:max(16px,env(safe-area-inset-left));max-width:55vw;text-align:left}
 #hint{position:fixed;inset:0;display:grid;place-items:center;color:var(--muted);opacity:.6;pointer-events:none}
-#ti.over{border-bottom:2px solid var(--ink1)}
-#ti{position:fixed;background:transparent;border:0;border-bottom:1px dashed var(--muted);outline:none;font-family:var(--ui);padding:0;min-width:140px;text-align:left;direction:auto}
+#tp{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(520px,calc(100% - 32px));background:var(--bar);border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px;box-shadow:0 8px 30px rgba(0,0,0,.12);z-index:20}
+#tpa{font:inherit;font-size:17px;line-height:1.45;width:100%;min-height:120px;max-height:40vh;resize:vertical;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--paper);outline:none;direction:auto}
+#tpa:focus{border-color:var(--mine)}
+#tp.over #tpa{border-color:var(--ink1)}
+#tp .row{display:flex;align-items:center;gap:4px}
+#tpc{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;padding:0 4px;margin-inline-end:auto}
+#tp.over #tpc{color:var(--ink1)}
+#tpok{background:var(--fg);color:var(--bar)}
 #namebox{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:6px;background:var(--bar);border:1px solid var(--line);border-radius:12px;padding:5px 6px 5px 10px;color:var(--muted);max-width:calc(100% - 32px)}
 #namebox input{font:inherit;font-size:15px;width:12em;max-width:52vw;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--fg);text-align:center;direction:auto}
 #admin{display:flex;gap:4px;align-items:center}
@@ -59,7 +65,13 @@ button.primary{background:var(--mine);color:#fff}
 <div id="clock" class="corner" dir="ltr" title="הדף נמחק בחצות"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10M7 21h10"/><path d="M8 3c0 4 8 5 8 9s-8 5-8 9M16 3c0 4-8 5-8 9"/><path d="M16 21c0-4-8-5-8-9"/></svg><span id="clockt"></span></div>
 <div id="note" class="corner" dir="rtl"></div>
 <div id="namebox" hidden dir="rtl"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg><input id="name" maxlength="24" autocomplete="nickname" aria-label="השם שלי"><button id="nameok" class="icon" aria-label="שמור" title="שמור"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
-<input id="ti" hidden maxlength="600" enterkeyhint="done" autocomplete="off" aria-label="טקסט">
+<div id="tp" hidden role="dialog" aria-label="טקסט">
+  <textarea id="tpa" maxlength="600" dir="auto" aria-label="טקסט"></textarea>
+  <div class="row"><span id="tpc" dir="ltr">0/600</span>
+    <button id="tpdel" class="icon" hidden aria-label="מחק טקסט" title="מחק טקסט"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4.5h6V7"/><path d="M6.5 7l1 12.5h9l1-12.5"/><path d="M10 11v5M14 11v5"/></svg></button>
+    <button id="tpx" class="icon" aria-label="ביטול" title="ביטול"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <button id="tpok" class="icon" aria-label="שמור" title="שמור"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
+</div>
 
 <div id="bar"><div class="tools" role="toolbar">
   <button id="m-draw" class="icon" aria-pressed="true" aria-label="עט" title="עט"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1-4.5L16 4.5a2.1 2.1 0 013 3L8 18.5 4 20z"/><path d="M14 6.5l3.5 3.5"/></svg></button>
@@ -133,6 +145,7 @@ function apply(e){
     const q = squares.get(e.sq); if(!q) return;
     if(e.t==='un'){ q.items = q.items.filter(i=>i.id!==e.id); return; }
     if(e.t==='nm'){ q.name = e.name; return; }
+    if(e.t==='te'){ const it=q.items.find(i=>i.id===e.id); if(it){ Object.assign(it,{ink:e.ink,size:e.size,x:e.x,y:e.y,text:e.text}); delete it._lines; delete it._bw; } return; }
     if(!q.items.some(i=>i.id===e.id)) q.items.push(e);
     q.z = Math.max(q.z, e.v);
   }
@@ -179,8 +192,11 @@ async function send(ev){
 
 // ---------- claiming ----------
 let claimP = null;
-function claimAt(w){ // square centered where the person first touched; drawing starts at once
-  const tmp = {x:Math.round(w.x), y:Math.round(w.y), r:0, z:Number.MAX_SAFE_INTEGER, items:[], name:myName};
+function claimAt(w){ // square around where the person first touched, kept fully on screen; drawing starts at once
+  const barTop=document.querySelector('.tools').getBoundingClientRect().top;
+  const tl=toWorld(0, 40), br=toWorld(innerWidth, barTop-12), h=S/2;
+  const fit=(v,a,b)=> b-a>=S ? Math.min(Math.max(v,a+h),b-h) : (a+b)/2;
+  const tmp = {x:Math.round(fit(w.x,tl.x,br.x)), y:Math.round(fit(w.y,tl.y,br.y)), r:0, z:Number.MAX_SAFE_INTEGER, items:[], name:myName};
   squares.set('_new', tmp); mySq = '_new'; ui();
   claimP = post('/api/claim', {x:tmp.x, y:tmp.y, name:myName}).then(d=>{
     squares.delete('_new');
@@ -205,8 +221,8 @@ for(let i=0;i<5;i++){
   b.onclick=()=>{ ink=i; [...$('inks').children].forEach((d,j)=>d.setAttribute('aria-pressed', j===i)); };
   $('inks').appendChild(b);
 }
-for(const m of ['draw','text','move']) $('m-'+m).onclick = () => { commitText(); mode=m; ui(); };
-$('net').onclick = async () => { commitText(); net=!net; ui(); if(net){ await loadCounts(); fitBubbles(); } draw(); };
+for(const m of ['draw','text','move']) $('m-'+m).onclick = () => { mode=m; ui(); };
+$('net').onclick = async () => { closePanel(); net=!net; ui(); if(net){ await loadCounts(); fitBubbles(); } draw(); };
 function fitBubbles(){
   if(!bubbles.length) return;
   let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
@@ -232,6 +248,7 @@ function ui(){
 let nameTimer = 0;
 function openName(offer){
   if(net) return;
+  $('namebox').style.bottom = (innerHeight - document.querySelector('.tools').getBoundingClientRect().top + 10) + 'px';
   $('name').value = myName; $('namebox').hidden = false; $('me').setAttribute('aria-pressed', true);
   clearTimeout(nameTimer);
   if(offer) nameTimer = setTimeout(()=>{ if(document.activeElement!==$('name')) closeName(); }, 6000);
@@ -285,7 +302,7 @@ function inkBottom(q){ // lowest point of the drawing, in the square's own coord
   let x0=S, x1=0, y1=0;
   for(const m of q.items){
     if(m.t==='st'){ for(let i=0;i<m.pts.length;i+=2){ x0=Math.min(x0,m.pts[i]); x1=Math.max(x1,m.pts[i]); y1=Math.max(y1,m.pts[i+1]); } }
-    else { const n=textLines(m).length; x0=Math.min(x0,m.x); x1=Math.max(x1,Math.min(S,m.x+measure(m.text,m.size))); y1=Math.max(y1,m.y+m.size*(1.25*n-.25)); }
+    else { const n=textLines(m).length; x0=Math.min(x0,m.x); x1=Math.max(x1,Math.min(S,m.x+widest(m.text,m.size))); y1=Math.max(y1,m.y+m.size*(1.25*n-.25)); }
   }
   return {x:Math.max(0,Math.min(S,(x0+x1)/2)), y:Math.min(S,y1)+14/view.s};
 }
@@ -307,15 +324,20 @@ const isRtl = t => /^[^A-Za-z\u0590-\u05FF\u0600-\u06FF]*[\u0590-\u05FF\u0600-\u
 function measure(text, size){ ctx.save(); ctx.font=fontFor(size); const w=ctx.measureText(text).width; ctx.restore(); return w; }
 function textLines(m){ // wrap to the room left in the square, so nothing is cut at the edge
   if(m._lines) return m._lines;
-  const size=m.size||20, max=Math.max(size*2, S-m.x), out=[]; let line='';
-  for(const word of m.text.split(' ')){
-    const next = line ? line+' '+word : word;
-    if(measure(next,size)<=max){ line=next; continue; }
-    if(line) out.push(line);
-    line='';
-    for(const ch of word){ if(measure(line+ch,size)>max && line){ out.push(line); line=ch; } else line+=ch; }
+  const size=m.size||20, max=Math.max(size*2, S-m.x), out=[], dirs=[];
+  for(const para of m.text.split('\n')){
+    const rtl=isRtl(para), start=out.length; let line='';
+    for(const word of para.split(' ')){
+      const next = line ? line+' '+word : word;
+      if(measure(next,size)<=max){ line=next; continue; }
+      if(line) out.push(line);
+      line='';
+      for(const ch of word){ if(measure(line+ch,size)>max && line){ out.push(line); line=ch; } else line+=ch; }
+    }
+    out.push(line);
+    for(let i=start;i<out.length;i++) dirs.push(rtl);
   }
-  if(line) out.push(line);
+  m._dirs = dirs;
   return (m._lines = out);
 }
 function paintItems(q, over, extra){
@@ -331,12 +353,13 @@ function paintItems(q, over, extra){
       ctx.lineTo(p[p.length-2],p[p.length-1]); ctx.stroke();
     } else if(m.t==='tx'){
       ctx.fillStyle=c; ctx.font=fontFor(m.size||20); ctx.textBaseline='top'; ctx.textAlign='left';
-      const rtl = isRtl(m.text), lines = textLines(m);
-      ctx.direction = rtl ? 'rtl' : 'ltr';
-      if(rtl){ // Hebrew lines line up on their right edge
-        if(m._bw==null) m._bw = Math.max(...lines.map(ln=>measure(ln, m.size||20)));
-        ctx.textAlign='right'; lines.forEach((ln,i)=>ctx.fillText(ln, m.x+m._bw, m.y + i*(m.size||20)*1.25));
-      } else lines.forEach((ln,i)=>ctx.fillText(ln, m.x, m.y + i*(m.size||20)*1.25));
+      const lines = textLines(m), size = m.size||20;
+      if(m._bw==null) m._bw = Math.max(0, ...lines.map(ln=>measure(ln, size)));
+      lines.forEach((ln,i)=>{ // Hebrew lines line up on the right, English on the left
+        const rtl = m._dirs[i];
+        ctx.direction = rtl ? 'rtl' : 'ltr'; ctx.textAlign = rtl ? 'right' : 'left';
+        ctx.fillText(ln, rtl ? m.x+m._bw : m.x, m.y + i*size*1.25);
+      });
       ctx.direction='ltr'; ctx.textAlign='left';
     }
   }
@@ -418,6 +441,7 @@ cv.addEventListener('pointerdown', e=>{
   tap={x:e.clientX,y:e.clientY};
   if(net){ pan={x:e.clientX,y:e.clientY}; return; }
   if(!$('namebox').hidden && document.activeElement!==$('name')) closeName();
+  if(!$('tp').hidden){ ptrs.delete(e.pointerId); tap=null; return; }
   if(adminOn()){ pan={x:e.clientX,y:e.clientY}; cv.classList.add('grabbing'); return; }
   if(mode==='draw'){ // in text mode a tap always writes
     const mine = mySq && squares.get(mySq);
@@ -434,7 +458,8 @@ function startAt(e, w){
     const l=toLocal(q,w);
     if(mode==='move' && inside(l)){ drag={kind:'move', dx:w.x-q.x, dy:w.y-q.y}; cv.classList.add('grabbing'); return; }
     if(mode==='draw'){ if(!inside(l)) spill(); localStroke={t:'st',id:rid(),ink,w:Math.max(1.5,Math.min(8,3/view.s)),pts:[r1(cl(l.x)),r1(cl(l.y))]}; draw(); return; }
-    if(mode==='text'){ e.preventDefault?.(); if(!inside(l)){ spill(); return; } openText(e.clientX,e.clientY,l); return; }
+    if(mode==='text'){ e.preventDefault?.(); if(!inside(l)){ spill(); return; }
+      const hit=textAt(q,l); openPanel(hit ? {x:hit.x,y:hit.y,size:20} : {x:l.x,y:l.y,size:20}, hit); return; }
   }
   pan={x:e.clientX,y:e.clientY}; cv.classList.add('grabbing');
 }
@@ -487,46 +512,63 @@ cv.addEventListener('wheel', e=>{
   draw();
 },{passive:false});
 
-// text
-const ti=$('ti'); let tiAt=null;
-function openText(sx,sy,l){
-  commitText(); tiAt={x:l.x,y:l.y,ink,size:20};
-  ti.hidden=false; ti.value=''; ti.style.left=sx+'px'; ti.style.top=sy+'px';
-  ti.style.fontSize=(20*view.s)+'px'; ti.style.color=col['ink'+ink];
-  ti.focus();
-}
+// text: a small panel for writing and editing
+const tpa=$('tpa'); let tp=null;
+const MIN_TEXT = 11, MAX_CHARS = 600;
+const widest = (t,size) => Math.max(0, ...t.split('\n').map(ln=>measure(ln,size)));
 // Fit text inside the square: keep its spot if it fits, else move it in,
 // then use the full width, then shrink the letters. over = it still does not fit.
-const MIN_TEXT = 11, MAX_CHARS = 600;
 function fitText(t, at){
   const height = (size, x) => { const n=textLines({text:t,size,x}).length; return size*(1.25*n-.25); };
   let x=Math.max(0,Math.min(S,at.x)), size=at.size;
-  const w=measure(t,size); if(x+w>S) x=Math.max(0,S-w); x=Math.round(x);
+  const w=widest(t,size); if(x+w>S) x=Math.max(0,S-w); x=Math.round(x);
   let h=height(size,x);
   if(h>S && x>0){ x=0; h=height(size,0); }
   while(h>S && size>MIN_TEXT){ size--; h=height(size,0); x=0; }
-  const over = h>S || ti.value.length>=MAX_CHARS;
-  return {x, y:Math.round(Math.max(0,Math.min(at.y,S-h))), size, over};
+  return {x, y:Math.round(Math.max(0,Math.min(at.y,S-h))), size, over: h>S};
 }
-function commitText(){
-  if(!tiAt) return; let t=ti.value.trim(); const at=tiAt; tiAt=null; ti.hidden=true; ti.value=''; ti.classList.remove('over');
-  const q=squares.get(mySq); if(!t||!q) return;
+function textAt(q, l){ // own text under a tap, if any
+  for(let i=q.items.length-1;i>=0;i--){ const m=q.items[i]; if(m.t!=='tx') continue;
+    const n=textLines(m).length, w=Math.min(S-m.x, widest(m.text,m.size)), h=m.size*1.25*n;
+    if(l.x>=m.x-6 && l.x<=m.x+w+6 && l.y>=m.y-6 && l.y<=m.y+h+6) return m; }
+  return null;
+}
+function openPanel(at, edit){
+  closeName();
+  tp={at, edit, ink: edit ? edit.ink : ink};
+  tpa.value = edit ? edit.text : ''; tpa.style.color = col['ink'+tp.ink];
+  $('tpdel').hidden = !edit; $('tp').hidden = false; tpInput(); tpa.focus();
+}
+function closePanel(){ tp=null; $('tp').hidden=true; $('tp').classList.remove('over'); tpa.blur(); }
+function tpInput(){
+  if(!tp) return; const t=tpa.value.trim();
+  $('tpc').textContent = `${tpa.value.length}/${MAX_CHARS}`;
+  const over = (t ? fitText(t,tp.at).over : false) || tpa.value.length>=MAX_CHARS;
+  $('tp').classList.toggle('over', over); if(over) spill(true);
+}
+function savePanel(){
+  if(!tp) return; const q=squares.get(mySq), {at,edit,ink:k}=tp; let t=tpa.value.trim().replace(/\n{3,}/g,'\n\n');
+  closePanel(); if(!q) return;
+  if(!t){ if(edit) removeText(q, edit); return; }
   let f=fitText(t, at);
-  while(f.size===MIN_TEXT && f.y===0 && textLines({text:t,size:f.size,x:f.x}).length*f.size*1.25>S+f.size && t.length>1){ t=t.slice(0,-1); f=fitText(t,at); }
-  const it={t:'tx',id:rid(),ink:at.ink,size:f.size,x:f.x,y:f.y,text:t};
-  q.items.push(it); ui(); draw(); send(it).catch(()=>{ q.items=q.items.filter(i=>i!==it); draw(); ui(); });
+  while(f.over && t.length>1){ t=t.slice(0,-1); f=fitText(t,at); }
+  if(edit){
+    const before={...edit}; Object.assign(edit,{size:f.size,x:f.x,y:f.y,text:t}); delete edit._lines; delete edit._bw; draw();
+    send({t:'te',id:edit.id,ink:edit.ink,size:f.size,x:f.x,y:f.y,text:t}).catch(()=>{ Object.assign(edit,before); delete edit._lines; delete edit._bw; draw(); });
+  } else {
+    const it={t:'tx',id:rid(),ink:k,size:f.size,x:f.x,y:f.y,text:t};
+    q.items.push(it); ui(); draw(); send(it).catch(()=>{ q.items=q.items.filter(i=>i!==it); draw(); ui(); });
+  }
 }
-ti.addEventListener('keydown',e=>{ if(e.key==='Enter') commitText(); if(e.key==='Escape'){ tiAt=null; ti.hidden=true; } });
-ti.addEventListener('blur',commitText);
-ti.addEventListener('input',()=>{
-  if(!tiAt) return;
-  const t=ti.value.trim(); if(!t){ ti.classList.remove('over'); ti.style.fontSize=(tiAt.size*view.s)+'px'; return; }
-  const f=fitText(t, tiAt);
-  ti.style.fontSize=(f.size*view.s)+'px';
-  ti.classList.toggle('over', f.over);
-  if(f.over) spill(true);
-  else if(f.size<tiAt.size || f.x!==Math.round(Math.max(0,Math.min(S,tiAt.x))) || f.y!==Math.round(tiAt.y)) spill(false);
-});
+function removeText(q, it){
+  q.items=q.items.filter(i=>i!==it); ui(); draw();
+  send({t:'un', id: it.id}).catch(()=>{ q.items.push(it); draw(); ui(); });
+}
+tpa.addEventListener('input', tpInput);
+tpa.addEventListener('keydown', e=>{ if(e.key==='Escape') closePanel(); if(e.key==='Enter' && (e.ctrlKey||e.metaKey)) savePanel(); });
+$('tpok').onclick = savePanel;
+$('tpx').onclick = closePanel;
+$('tpdel').onclick = () => { if(!tp||!tp.edit) return; const q=squares.get(mySq), it=tp.edit; closePanel(); if(q) removeText(q,it); };
 
 // ---------- views ----------
 const seenTime = {}; let queue = [];
@@ -555,7 +597,7 @@ async function loadCounts(){
 setInterval(()=>{ if(net && !document.hidden) loadCounts(); }, 6000);
 
 // ---------- admin (#admin) ----------
-const admin = location.hash==='#admin';
+const admin = location.hash==='#admin' || location.pathname.replace(/\/$/,'')==='/admin';
 let adminSession = null, adminItem = null;
 try{ adminSession = sessionStorage.getItem('bp-admin'); }catch{}
 const adminOn = () => admin && !!adminSession;

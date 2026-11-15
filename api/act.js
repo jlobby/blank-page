@@ -18,11 +18,11 @@ function clean(e) {
       if (pts.some(p => p == null)) return null;
       return { t: 'st', id: e.id, ink, w: num(e.w, 1, 14) ?? 3, pts: pts.map(p => Math.round(p * 10) / 10) };
     }
-    case 'tx': {
-      const text = typeof e.text === 'string' ? e.text.trim().slice(0, 600) : '';
+    case 'tx': case 'te': { // te = edit of an existing text, same fields
+      const text = typeof e.text === 'string' ? e.text.trim().replace(/\n{3,}/g, '\n\n').slice(0, 600) : '';
       const x = num(e.x, 0, S), y = num(e.y, 0, S);
       if (!sid(e.id) || !text || x == null || y == null) return null;
-      return { t: 'tx', id: e.id, ink, size: num(e.size, 10, 60) ?? 20, x: Math.round(x), y: Math.round(y), text };
+      return { t: e.t, id: e.id, ink, size: num(e.size, 10, 60) ?? 20, x: Math.round(x), y: Math.round(y), text };
     }
     case 'un': return sid(e.id) ? { t: 'un', id: e.id } : null;
     case 'nm': { const name = cleanName(e.name); return name ? { t: 'nm', name } : null; }
