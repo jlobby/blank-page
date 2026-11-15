@@ -2,9 +2,8 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 process.env.BLANK_DEV ||= '1';
-process.env.ADMIN_KEY ||= 'dev';
 const routes = {};
-for (const n of ['events', 'claim', 'act', 'view', 'views', 'admin']) routes['/api/' + n] = (await import(`./api/${n}.js`)).default;
+for (const n of ['events', 'claim', 'act', 'view', 'views', 'admin', 'admin-login', 'config']) routes['/api/' + n] = (await import(`./api/${n}.js`)).default;
 http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://x');
   const h = routes[u.pathname];

@@ -45,7 +45,7 @@ button.primary{background:var(--mine);color:#fff}
 #namebox{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:6px;background:var(--bar);border:1px solid var(--line);border-radius:12px;padding:5px 6px 5px 10px;color:var(--muted);max-width:calc(100% - 32px)}
 #namebox input{font:inherit;font-size:15px;width:12em;max-width:52vw;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--fg);text-align:center;direction:auto}
 #admin{display:flex;gap:4px;align-items:center}
-#admin input{font:inherit;width:110px;padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--fg)}
+#gbtn{display:grid;place-items:center;min-width:36px;min-height:34px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -67,7 +67,7 @@ button.primary{background:var(--mine);color:#fff}
   <span class="sep"></span>
   <button id="me" class="icon" aria-label="השם שלי" title="השם שלי" aria-pressed="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg></button>
   <button id="net" class="icon" aria-pressed="false" aria-label="רשת" title="רשת"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="10" r="5.5"/><circle cx="17.5" cy="16.5" r="3"/><circle cx="17" cy="5.5" r="2"/></svg></button>
-  <span id="admin" hidden><input id="akey" type="password" placeholder="מפתח מנהל" aria-label="מפתח מנהל"><button id="adel" disabled>מחק ריבוע</button></span>
+  <span id="admin" hidden><span class="sep"></span><span id="gbtn" title="כניסת מנהל"></span><span id="atools" hidden style="display:contents"><span id="ashield" class="icon" title="מצב מנהל" style="color:var(--ink1);display:grid;place-items:center;padding:0 4px"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.3-3 7.7-7 9.5-4-1.8-7-5.2-7-9.5V6z"/></svg></span><button id="aitem" class="icon" disabled aria-label="מחק קו" title="מחק קו"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 20H20"/><path d="M4.6 14.6l8.9-8.9a2 2 0 012.8 0l2.5 2.5a2 2 0 010 2.8L11 19.8a1 1 0 01-.7.2H7.9a1 1 0 01-.7-.3l-2.6-2.6a1.8 1.8 0 010-2.5z"/><path d="M9.5 9.7l5 5"/></svg></button><button id="adel" class="icon" disabled aria-label="מחק ציור" title="מחק ציור"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M8 8l8 8M16 8l-8 8"/></svg></button><button id="aout" class="icon" aria-label="יציאה" title="יציאה"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h4a2 2 0 012 2v12a2 2 0 01-2 2h-4"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg></button></span></span>
 </div></div>
 
 <script>
@@ -122,6 +122,7 @@ function apply(e){
   } else if(e.t==='del'){
     squares.delete(e.sq);
     if(e.sq===mySq){ mySq=null; ui(); note('הריבוע שלך הוסר.'); }
+    if(e.sq===adminSel){ adminSel=null; adminItem=null; if(admin) adminUi(); }
   } else {
     const q = squares.get(e.sq); if(!q) return;
     if(e.t==='un'){ q.items = q.items.filter(i=>i.id!==e.id); return; }
@@ -293,13 +294,13 @@ function paintReveal(){
 function edgeAlpha(){ const left = spillUntil - performance.now(); if(left<=0) return 0; draw(); return Math.min(1, left/600); }
 function spill(){ spillUntil = performance.now() + 1800; draw(); }
 
-function paintItems(q){
+function paintItems(q, over, extra){
   ctx.lineCap='round'; ctx.lineJoin='round';
-  const list = localStroke && q===squares.get(mySq) ? q.items.concat([localStroke]) : q.items;
+  const list = !over && localStroke && q===squares.get(mySq) ? q.items.concat([localStroke]) : q.items;
   for(const m of list){
-    const c = col['ink'+(m.ink|0)] || col.ink0;
+    const c = over || col['ink'+(m.ink|0)] || col.ink0;
     if(m.t==='st'){
-      const p=m.pts; ctx.strokeStyle=c; ctx.fillStyle=c; ctx.lineWidth=m.w||3;
+      const p=m.pts; ctx.strokeStyle=c; ctx.fillStyle=c; ctx.lineWidth=(m.w||3)+(extra||0);
       if(p.length<=4){ ctx.beginPath(); ctx.arc(p[0],p[1],(m.w||3)/2,0,7); ctx.fill(); continue; }
       ctx.beginPath(); ctx.moveTo(p[0],p[1]);
       for(let i=2;i<p.length-2;i+=2) ctx.quadraticCurveTo(p[i],p[i+1],(p[i]+p[i+2])/2,(p[i+1]+p[i+3])/2);
@@ -313,7 +314,9 @@ function paintItems(q){
 function paintSquare(id, q){
   ctx.save();
   ctx.translate(q.x,q.y); ctx.rotate(q.r); ctx.translate(-S/2,-S/2);
-  ctx.save(); ctx.beginPath(); ctx.rect(0,0,S,S); ctx.clip(); paintItems(q); ctx.restore();
+  ctx.save(); ctx.beginPath(); ctx.rect(0,0,S,S); ctx.clip(); paintItems(q);
+  if(id===adminSel && adminItem){ const m=q.items.find(i=>i.id===adminItem); if(m) paintItems({items:[m]}, col.ink1, 4/view.s); }
+  ctx.restore();
   const a = id===adminSel ? 1 : id===mySq ? (mode==='move' ? 1 : edgeAlpha()) : 0;
   if(a>0){
     ctx.globalAlpha=a; ctx.strokeStyle = id===adminSel ? col.ink1 : col.mine; ctx.lineWidth=2/view.s; ctx.setLineDash([6/view.s,5/view.s]);
@@ -385,6 +388,7 @@ cv.addEventListener('pointerdown', e=>{
   tap={x:e.clientX,y:e.clientY};
   if(net){ pan={x:e.clientX,y:e.clientY}; return; }
   if(!$('namebox').hidden && document.activeElement!==$('name')) closeName();
+  if(adminOn()){ pan={x:e.clientX,y:e.clientY}; cv.classList.add('grabbing'); return; }
   if(mode!=='move'){
     const mine = mySq && squares.get(mySq);
     if(!(mine && inside(toLocal(mine,w))) && topWithInkAt(w,true)){ maybe={w, x:e.clientX, y:e.clientY}; return; }
@@ -392,7 +396,6 @@ cv.addEventListener('pointerdown', e=>{
   startAt(e, w);
 });
 function startAt(e, w){
-  if(admin && !mySq){ pan={x:e.clientX,y:e.clientY}; return; }
   let q=mySq && squares.get(mySq);
   if(!q && mode!=='move' && day){ q = claimAt(w); }
   if(q){
@@ -429,7 +432,8 @@ function end(e){
   ptrs.delete(e.pointerId); cv.classList.remove('grabbing');
   if(pinch){ if(ptrs.size<2) pinch=null; return; }
   const wasTap = tap && Math.hypot(e.clientX-tap.x,e.clientY-tap.y)<6; tap=null;
-  if(maybe){ const t=topWithInkAt(maybe.w,true); maybe=null; if(t && !admin){ reveal={sq:t[0], until:performance.now()+4000}; draw(); return; } }
+  if(adminOn() && !net){ pan=null; if(wasTap) adminPick(toWorld(e.clientX,e.clientY)); return; }
+  if(maybe){ const t=topWithInkAt(maybe.w,true); maybe=null; if(t){ reveal={sq:t[0], until:performance.now()+4000}; draw(); return; } }
   if(drag){ const q=squares.get(mySq); drag=null; if(q){ pendingMove++; send({t:'sq',x:q.x,y:q.y,r:q.r}).finally(()=>pendingMove--); } return; }
   if(localStroke){ const s=localStroke, q=squares.get(mySq); localStroke=null;
     if(q){ q.items.push(s); q.z=Number.MAX_SAFE_INTEGER; ui(); draw();
@@ -439,8 +443,7 @@ function end(e){
   if(wasTap && net){ const w=toWorld(e.clientX,e.clientY); const b=bubbles.find(b=>Math.hypot(b.x-w.x,b.y-w.y)<b.R);
     if(b && selBubble===b.id){ net=false; selBubble=null; ui(); flyTo(b.id); }
     else { selBubble = b ? b.id : null; draw(); } }
-  else if(wasTap && !admin && mode==='move'){ const t=topWithInkAt(toWorld(e.clientX,e.clientY),false); if(t){ reveal={sq:t[0], until:performance.now()+4000}; draw(); } }
-  else if(wasTap && admin){ const t=topSquareAt(toWorld(e.clientX,e.clientY)); adminSel=t?t[0]:null; $('adel').disabled=!adminSel; draw(); }
+  else if(wasTap && mode==='move'){ const t=topWithInkAt(toWorld(e.clientX,e.clientY),false); if(t){ reveal={sq:t[0], until:performance.now()+4000}; draw(); } }
 }
 cv.addEventListener('pointerup', end);
 cv.addEventListener('pointercancel', e=>{ ptrs.delete(e.pointerId); pinch=pan=maybe=null; localStroke=null; if(drag){drag=null;} draw(); });
@@ -498,16 +501,63 @@ async function loadCounts(){
 setInterval(()=>{ if(net && !document.hidden) loadCounts(); }, 6000);
 
 // ---------- admin (#admin) ----------
-let admin = location.hash==='#admin';
+const admin = location.hash==='#admin';
+let adminSession = null, adminItem = null;
+try{ adminSession = sessionStorage.getItem('bp-admin'); }catch{}
+const adminOn = () => admin && !!adminSession;
+function adminUi(){
+  $('admin').hidden = !admin;
+  $('atools').hidden = !adminOn(); $('gbtn').hidden = adminOn();
+  $('adel').disabled = !adminSel; $('aitem').disabled = !adminItem;
+}
+async function adminLogin(credential){
+  try{
+    const r = await fetch('/api/admin-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential})});
+    const d = await r.json().catch(()=>({}));
+    if(!r.ok){ note(r.status===403 ? 'החשבון הזה אינו מנהל' : 'הכניסה נכשלה'); return; }
+    adminSession = d.session; try{ sessionStorage.setItem('bp-admin', adminSession); }catch{}
+    note(''); adminUi(); draw();
+  }catch{ note('הכניסה נכשלה'); }
+}
+function adminLogout(){ adminSession=null; adminSel=null; adminItem=null; try{ sessionStorage.removeItem('bp-admin'); }catch{} adminUi(); draw(); }
+function adminPick(w){
+  const t = topWithInkAt(w,false) || topSquareAt(w);
+  adminSel = t ? t[0] : null; adminItem = null;
+  if(t){
+    const q=t[1], l=toLocal(q,w), tol=16/view.s; let best=tol;
+    for(const m of q.items){
+      let d=Infinity;
+      if(m.t==='st'){ for(let i=0;i<m.pts.length;i+=2) d=Math.min(d, Math.hypot(m.pts[i]-l.x, m.pts[i+1]-l.y)); }
+      else if(l.x>=m.x-4 && l.x<=m.x+m.text.length*m.size*.6 && l.y>=m.y-4 && l.y<=m.y+m.size+4) d=0;
+      if(d<best){ best=d; adminItem=m.id; }
+    }
+    reveal = {sq:t[0], until:performance.now()+4000};
+  }
+  adminUi(); draw();
+}
+async function adminDelete(withItem){
+  if(!adminSel) return;
+  try{
+    const r=await fetch('/api/admin',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({session:adminSession, sq:adminSel, id: withItem ? adminItem : undefined})});
+    const d=await r.json().catch(()=>({}));
+    if(r.status===401){ adminLogout(); note('צריך להתחבר שוב'); return; }
+    if(!r.ok){ note('המחיקה נכשלה'); return; }
+    apply(d.ev); adminItem=null; if(!withItem) adminSel=null; adminUi(); draw();
+  }catch{ note('המחיקה נכשלה'); }
+}
 if(admin){
-  $('admin').hidden=false;
-  try{ $('akey').value=sessionStorage.getItem('bp-akey')||''; }catch{}
-  $('adel').onclick = async ()=>{
-    const key=$('akey').value; try{ sessionStorage.setItem('bp-akey',key); }catch{}
-    try{ const r=await fetch('/api/admin',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key,sq:adminSel})});
-      const d=await r.json(); if(!r.ok) return note(d.error==='wrong key'?'מפתח שגוי':'המחיקה נכשלה');
-      apply(d.ev); adminSel=null; $('adel').disabled=true; draw(); note('הריבוע נמחק'); }catch{ note('המחיקה נכשלה'); }
-  };
+  $('adel').onclick = () => adminDelete(false);
+  $('aitem').onclick = () => adminDelete(true);
+  $('aout').onclick = adminLogout;
+  if(location.hostname==='localhost') window.bpAdminLogin = adminLogin;
+  fetch('/api/config').then(r=>r.json()).then(c=>{
+    if(!c.googleClientId){ if(!adminOn()) note('כניסת מנהל עוד לא הוגדרה'); return; }
+    const g=document.createElement('script'); g.src='https://accounts.google.com/gsi/client'; g.async=true;
+    g.onload=()=>{ google.accounts.id.initialize({client_id:c.googleClientId, callback:r=>adminLogin(r.credential)});
+      google.accounts.id.renderButton($('gbtn'),{type:'icon',shape:'circle',theme:'outline',size:'medium'}); };
+    document.head.appendChild(g);
+  }).catch(()=>{});
+  adminUi();
 }
 
 // ---------- clock ----------
