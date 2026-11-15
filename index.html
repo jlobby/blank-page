@@ -402,22 +402,39 @@ function paintSquare(id, q){
 
 // network mode: one circle per square, area by views
 let bubbles = [];
+// Circle AREA is proportional to views: twice the views, twice the area.
+// The most viewed gets R_MAX; a creation with no views yet is a small dot.
+const R_MAX = 300, R_DOT = 16, GAP = 16;
 function layoutBubbles(){
-  const ids=[...squares.keys()], max=Math.max(1,...ids.map(i=>counts[i]||0));
+  const ids=[...squares.keys()].filter(id=>squares.get(id).items.length);   // only creations with something in them
+  const max=Math.max(0,...ids.map(i=>counts[i]||0));
   const prev=new Map(bubbles.map(b=>[b.id,b]));
-  bubbles = ids.map(id=>{ const q=squares.get(id), n=counts[id]||0, p=prev.get(id);
-    return {id, n, R: 70 + 230*Math.sqrt(n/max), x:p?p.x:q.x, y:p?p.y:q.y, top: n>0 && n===max}; });
-  for(let it=0; it<60; it++){
-    for(let i=0;i<bubbles.length;i++) for(let j=i+1;j<bubbles.length;j++){
-      const a=bubbles[i], b=bubbles[j]; let dx=b.x-a.x, dy=b.y-a.y, d=Math.hypot(dx,dy)||.01; const m=a.R+b.R+16;
-      if(d<m){ const k=(m-d)/2/d; dx*=k; dy*=k; a.x-=dx; a.y-=dy; b.x+=dx; b.y+=dy; }
+  bubbles = ids.map((id,i)=>{ const q=squares.get(id), n=counts[id]||0, p=prev.get(id);
+    const R = max ? Math.max(R_DOT, R_MAX*Math.sqrt(n/max)) : 70;           // no views anywhere yet: all the same
+    return {i, id, n, R, x:p?p.x:q.x, y:p?p.y:q.y, top: n>0 && n===max}; });
+  // push overlapping circles apart; a grid keeps this fast with many circles
+  const cell = 2*Math.max(70, ...bubbles.map(b=>b.R)) + GAP;
+  for(let it=0; it<40; it++){
+    const grid=new Map(), key=(x,y)=>Math.floor(x/cell)+','+Math.floor(y/cell);
+    for(const b of bubbles){ const k=key(b.x,b.y); (grid.get(k)||grid.set(k,[]).get(k)).push(b); }
+    let moved=false;
+    for(const a of bubbles){
+      const cx=Math.floor(a.x/cell), cy=Math.floor(a.y/cell);
+      for(let gx=cx-1;gx<=cx+1;gx++) for(let gy=cy-1;gy<=cy+1;gy++) for(const b of grid.get(gx+','+gy)||[]){
+        if(b.i<=a.i) continue;
+        let dx=b.x-a.x, dy=b.y-a.y, d=Math.hypot(dx,dy)||.01; const m=a.R+b.R+GAP;
+        if(d<m){ const k=(m-d)/2/d; dx*=k; dy*=k; a.x-=dx; a.y-=dy; b.x+=dx; b.y+=dy; moved=true; }
+      }
     }
+    if(!moved) break;
   }
 }
 function paintBubbles(){
   ctx.textAlign='center'; ctx.textBaseline='top';
+  const tl=toWorld(0,0), br=toWorld(innerWidth,innerHeight);
   for(const b of bubbles){
     const q=squares.get(b.id); if(!q) continue;
+    if(b.x+b.R<tl.x || b.x-b.R>br.x || b.y+b.R<tl.y || b.y-b.R-40>br.y) continue;   // off screen
     ctx.save(); ctx.translate(b.x,b.y);
     ctx.beginPath(); ctx.arc(0,0,b.R,0,7); ctx.fillStyle=col.paper; ctx.fill();
     ctx.save(); ctx.clip(); const k=(2*b.R)/S*1.05; ctx.scale(k,k); ctx.translate(-S/2,-S/2); paintItems(q); ctx.restore();
@@ -520,7 +537,7 @@ function end(e){
       send(st, sq).catch(()=>{ q.items=q.items.filter(i=>i!==st); draw(); ui(); }); }
     return; }
   pan=null;
-  if(wasTap && net){ const w=toWorld(e.clientX,e.clientY); const b=bubbles.find(b=>Math.hypot(b.x-w.x,b.y-w.y)<b.R);
+  if(wasTap && net){ const w=toWorld(e.clientX,e.clientY); const b=bubbles.find(b=>Math.hypot(b.x-w.x,b.y-w.y)<Math.max(b.R, 22/view.s));
     if(b && selBubble===b.id){ net=false; selBubble=null; ui(); flyTo(b.id); }
     else { selBubble = b ? b.id : null; draw(); } }
   else if(wasTap && mode==='move'){ const t=topWithInkAt(toWorld(e.clientX,e.clientY),false); if(t){ reveal={sq:t[0], until:performance.now()+4000}; draw(); } }
@@ -605,7 +622,7 @@ setInterval(()=>{
   if(document.hidden || net || !day) return;
   const done = reported();
   for(const [id,q] of squares){
-    if(mine.has(id) || done.has(id) || queue.includes(id)) continue;
+    if(mine.has(id) || done.has(id) || queue.includes(id) || !q.items.length) continue;   // empty creations are not views
     const p=toScreen(q.x,q.y), big=S*view.s>=90;
     if(big && p.x>0 && p.y>0 && p.x<innerWidth && p.y<innerHeight){ if((seenTime[id]=(seenTime[id]||0)+1)>=2) queue.push(id); }
     else seenTime[id]=0;
@@ -683,7 +700,7 @@ if(admin){
   adminUi();
 }
 
-if(location.hostname==='localhost') window.__bp = { squares, mine, get mySq(){ return mySq; }, myAt, toWorld, get view(){ return view; } };
+if(location.hostname==='localhost') window.__bp = { squares, mine, get bubbles(){ return bubbles; }, layoutBubbles, counts:()=>counts, get mySq(){ return mySq; }, myAt, toWorld, get view(){ return view; } };
 // ---------- clock ----------
 function tick(){
   const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Jerusalem',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(new Date());
