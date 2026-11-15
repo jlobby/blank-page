@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>דף ריק</title>
+<meta name="description" content="דף משותף. כל אחד מקבל ריבוע. בחצות הכול נמחק.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500&display=swap">
+<style>
+/* Layout: a desk of loose paper squares, one thin toolbar at the bottom, a clock in the corner. */
+:root{
+  --desk:#e7e8ea; --paper:#ffffff; --edge:rgba(0,0,0,.10); --fg:#1b1b1a; --muted:#7d7f84; --bar:#ffffff; --line:#dcdde0; --mine:#1f5fd1;
+  --ink0:#1b1b1a; --ink1:#d23a2a; --ink2:#1f5fd1; --ink3:#1f8a4c; --ink4:#e0a100;
+  --ui:"Rubik",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --desk:#0e0f11; --paper:#1d1e21; --edge:rgba(255,255,255,.08); --fg:#ececea; --muted:#83868c; --bar:#1d1e21; --line:#2e3034; --mine:#6b9dff;
+  --ink0:#ececea; --ink1:#ff6a55; --ink2:#6b9dff; --ink3:#4fcf86; --ink4:#ffcc33; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--desk);color:var(--fg);font:14px/1.4 var(--ui);overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:grab}
+#c.draw{cursor:crosshair} #c.text{cursor:text} #c.grabbing{cursor:grabbing}
+#bar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;pointer-events:none;
+  padding:0 max(16px,env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+.tools{pointer-events:auto;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;background:var(--bar);border:1px solid var(--line);border-radius:12px;padding:5px 6px;max-width:100%}
+.sep{width:1px;height:22px;background:var(--line);margin:0 3px}
+button{font:inherit;color:var(--fg);background:none;border:0;border-radius:8px;padding:6px 10px;min-height:34px;cursor:pointer}
+button:hover{background:var(--line)}
+button[aria-pressed="true"]{background:var(--fg);color:var(--bar)}
+button:focus-visible{outline:2px solid var(--mine);outline-offset:2px}
+button:disabled{opacity:.35;cursor:default;background:none}
+button.primary{background:var(--mine);color:#fff}
+.dot{width:24px;height:24px;min-height:0;padding:3px;border-radius:50%;border:2px solid transparent}
+.dot i{display:block;width:100%;height:100%;border-radius:50%;background:var(--c)}
+.dot[aria-pressed="true"]{background:none;border-color:var(--fg)}
+#inks{display:flex;gap:2px}
+.corner{position:fixed;top:calc(12px + env(safe-area-inset-top));color:var(--muted);font-size:12px;pointer-events:none;font-variant-numeric:tabular-nums}
+#clock{right:max(16px,env(safe-area-inset-right))}
+#note{left:max(16px,env(safe-area-inset-left));max-width:55vw;text-align:left}
+#hint{position:fixed;inset:0;display:grid;place-items:center;color:var(--muted);pointer-events:none;font-size:15px}
+#ti{position:fixed;background:transparent;border:0;border-bottom:1px dashed var(--muted);outline:none;font-family:var(--ui);padding:0;min-width:140px;text-align:left;direction:auto}
+#admin{display:flex;gap:4px;align-items:center}
+#admin input{font:inherit;width:110px;padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--fg)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="הדף המשותף"></canvas>
+<div id="hint" hidden>ריק.</div>
+<div id="clock" class="corner"></div>
+<div id="note" class="corner" dir="rtl"></div>
+<input id="ti" hidden maxlength="200" autocomplete="off" aria-label="טקסט">
+
+<div id="bar"><div class="tools" role="toolbar">
+  <button id="claim" class="primary">קבל ריבוע</button>
+  <button id="m-draw" aria-pressed="true" hidden>עט</button>
+  <button id="m-text" aria-pressed="false" hidden>טקסט</button>
+  <button id="m-move" aria-pressed="false" hidden>הזז</button>
+  <span class="sep mineonly" hidden></span>
+  <span id="inks" class="mineonly" hidden></span>
+  <button id="undo" class="mineonly" hidden disabled>בטל</button>
+  <span class="sep"></span>
+  <button id="net" aria-pressed="false">רשת</button>
+  <span id="admin" hidden><input id="akey" type="password" placeholder="מפתח מנהל" aria-label="מפתח מנהל"><button id="adel" disabled>מחק ריבוע</button></span>
+</div></div>
+
+<script>
+(() => {
+'use strict';
+const S = 360;
+const $ = id => document.getElementById(id);
+const cv = $('c'), ctx = cv.getContext('2d');
+const note = t => { $('note').textContent = t || ''; };
+
+// ---------- identity (per browser) ----------
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch{ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch{} },
+};
+let token = store.get('bp-token');
+if(!token){ const a=new Uint8Array(18); crypto.getRandomValues(a); token=btoa(String.fromCharCode(...a)).replace(/[+/=]/g,c=>({'+':'-','/':'_','=':''}[c])); store.set('bp-token',token); }
+const rid = () => Math.random().toString(36).slice(2,10);
+
+// ---------- state ----------
+let day = null, lastV = 0;
+const applied = new Set();
+const squares = new Map();          // sq -> {x,y,r,z,items:[]}
+let mySq = null, mode = 'draw', ink = 0, net = false;
+let view = {x: innerWidth/2, y: innerHeight/2.3, s: Math.min(1, innerWidth/(S*1.4))};
+let counts = {};
+let pendingMove = 0;
+
+// ---------- colors ----------
+let col = {};
+function readColors(){
+  const st = getComputedStyle(document.documentElement);
+  for(const n of ['desk','paper','edge','fg','muted','mine','ink0','ink1','ink2','ink3','ink4']) col[n]=st.getPropertyValue('--'+n).trim();
+  draw();
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors);
+
+// ---------- events from server ----------
+function apply(e){
+  if(applied.has(e.v)) return; applied.add(e.v);
+  if(e.t==='sq'){
+    let q = squares.get(e.sq);
+    if(!q){ q={x:e.x,y:e.y,r:e.r,z:e.z,items:[]}; squares.set(e.sq,q); }
+    else if(!(e.sq===mySq && (pendingMove>0 || drag))){ q.x=e.x; q.y=e.y; q.r=e.r; }
+    q.z = Math.max(q.z, e.z);
+  } else if(e.t==='del'){
+    squares.delete(e.sq);
+    if(e.sq===mySq){ mySq=null; ui(); note('הריבוע שלך הוסר.'); }
+  } else {
+    const q = squares.get(e.sq); if(!q) return;
+    if(e.t==='un'){ q.items = q.items.filter(i=>i.id!==e.id); return; }
+    if(!q.items.some(i=>i.id===e.id)) q.items.push(e);
+    q.z = Math.max(q.z, e.v);
+  }
+}
+
+let polling = false, failures = 0;
+async function poll(){
+  if(polling || document.hidden) return; polling = true;
+  try{
+    const r = await fetch(`/api/events?day=${day||''}&since=${Math.max(0,lastV-30)}`, {cache:'no-store'});
+    if(!r.ok) throw 0;
+    const d = await r.json();
+    if(d.reset && d.day!==day){
+      squares.clear(); applied.clear(); lastV=0; counts={};
+      day = d.day; mySq = store.get('bp-sq-'+day); ui();
+    }
+    for(const e of d.events){ apply(e); lastV=Math.max(lastV,e.v); }
+    lastV = Math.max(lastV, d.v);
+    failures = 0; if($('note').dataset.err) { note(''); delete $('note').dataset.err; }
+    draw();
+  }catch{
+    if(++failures===3){ note('אין חיבור לשרת. מנסה שוב…'); $('note').dataset.err=1; }
+  }finally{ polling=false; }
+}
+
+async function post(path, payload){
+  const r = await fetch(path, {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({token, day, ...payload})});
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok){
+    if(r.status===429) note('לאט לאט. נסו שוב בעוד דקה.');
+    else if(r.status===507) note('הדף מלא להיום. בחצות הוא מתרוקן.');
+    else if(r.status===403){ note('הריבוע הזה כבר לא שלך.'); }
+    else if(r.status===409) poll();
+    throw d;
+  }
+  return d;
+}
+
+function send(ev){
+  if(!mySq) return Promise.reject();
+  return post('/api/act', {sq: mySq, ev}).then(d=>{ apply(d.ev); const q=squares.get(mySq); if(q) q.z=d.ev.v; lastV=Math.max(lastV,d.ev.v); draw(); return d; });
+}
+
+// ---------- claiming ----------
+$('claim').onclick = async () => {
+  if(mySq){ flyTo(mySq); return; }
+  $('claim').disabled = true;
+  try{
+    const d = await post('/api/claim', {});
+    day = d.day; mySq = d.sq; store.set('bp-sq-'+day, mySq);
+    if(d.ev){ apply(d.ev); }
+    else await poll();
+    ui(); flyTo(mySq);
+  }catch{} finally{ $('claim').disabled=false; }
+};
+function flyTo(sq){
+  const q = squares.get(sq); if(!q) return;
+  const s = Math.min(2, Math.max(.5, Math.min(innerWidth, innerHeight-130)/(S*1.5)));
+  view.s = s; view.x = innerWidth/2 - q.x*s; view.y = (innerHeight-60)/2 - q.y*s; draw();
+}
+
+// ---------- toolbar ----------
+for(let i=0;i<5;i++){
+  const b=document.createElement('button'); b.className='dot'; b.innerHTML=`<i style="--c:var(--ink${i})"></i>`;
+  b.setAttribute('aria-label','צבע '+(i+1)); b.setAttribute('aria-pressed', i===0);
+  b.onclick=()=>{ ink=i; [...$('inks').children].forEach((d,j)=>d.setAttribute('aria-pressed', j===i)); };
+  $('inks').appendChild(b);
+}
+for(const m of ['draw','text','move']) $('m-'+m).onclick = () => { commitText(); mode=m; ui(); };
+$('net').onclick = async () => { commitText(); net=!net; ui(); if(net){ await loadCounts(); fitBubbles(); } draw(); };
+function fitBubbles(){
+  if(!bubbles.length) return;
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  for(const b of bubbles){ x0=Math.min(x0,b.x-b.R); y0=Math.min(y0,b.y-b.R); x1=Math.max(x1,b.x+b.R); y1=Math.max(y1,b.y+b.R+30); }
+  const s=Math.min(2, Math.max(.05, Math.min(innerWidth*.9/(x1-x0), (innerHeight-140)/(y1-y0))));
+  view={s, x:innerWidth/2-(x0+x1)/2*s, y:(innerHeight-70)/2-(y0+y1)/2*s};
+}
+$('undo').onclick = () => {
+  const q = squares.get(mySq); if(!q||!q.items.length) return;
+  const it = q.items.pop(); draw(); ui();
+  send({t:'un', id: it.id}).catch(()=>{ q.items.push(it); draw(); });
+};
+function ui(){
+  const has = !!mySq && squares.has(mySq) || !!mySq;
+  $('claim').textContent = has ? 'הריבוע שלי' : 'קבל ריבוע';
+  $('claim').classList.toggle('primary', !has);
+  for(const m of ['draw','text','move']){ $('m-'+m).hidden=!has||net; $('m-'+m).setAttribute('aria-pressed', mode===m); }
+  document.querySelectorAll('.mineonly').forEach(e=>e.hidden=!has||net);
+  const q = squares.get(mySq); $('undo').disabled = !q || !q.items.length;
+  $('net').setAttribute('aria-pressed', net);
+  cv.className = net ? '' : has && mode==='draw' ? 'draw' : has && mode==='text' ? 'text' : '';
+}
+
+// ---------- geometry ----------
+const toWorld = (sx,sy)=>({x:(sx-view.x)/view.s, y:(sy-view.y)/view.s});
+const toScreen = (wx,wy)=>({x:wx*view.s+view.x, y:wy*view.s+view.y});
+function toLocal(q, w){ // world -> square's own 0..S coords
+  const dx=w.x-q.x, dy=w.y-q.y, c=Math.cos(-q.r), s=Math.sin(-q.r);
+  return {x: dx*c-dy*s + S/2, y: dx*s+dy*c + S/2};
+}
+function fromLocal(q, l){
+  const dx=l.x-S/2, dy=l.y-S/2, c=Math.cos(q.r), s=Math.sin(q.r);
+  return {x:q.x+dx*c-dy*s, y:q.y+dx*s+dy*c};
+}
+const inside = l => l.x>=0 && l.y>=0 && l.x<=S && l.y<=S;
+const rotHandle = q => fromLocal(q, {x:S+18, y:-18});
+function topSquareAt(w){
+  let best=null;
+  for(const [id,q] of squares){ if(inside(toLocal(q,w)) && (!best || q.z>best[1].z)) best=[id,q]; }
+  return best;
+}
+
+// ---------- drawing ----------
+let dpr=1, raf=0;
+function resize(){ dpr=devicePixelRatio||1; cv.width=Math.round(innerWidth*dpr); cv.height=Math.round(innerHeight*dpr); draw(); }
+function draw(){ if(!raf) raf=requestAnimationFrame(render); }
+let localStroke = null, adminSel = null;
+
+function paintItems(q){
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  const list = localStroke && q===squares.get(mySq) ? q.items.concat([localStroke]) : q.items;
+  for(const m of list){
+    const c = col['ink'+(m.ink|0)] || col.ink0;
+    if(m.t==='st'){
+      const p=m.pts; ctx.strokeStyle=c; ctx.fillStyle=c; ctx.lineWidth=m.w||3;
+      if(p.length<=4){ ctx.beginPath(); ctx.arc(p[0],p[1],(m.w||3)/2,0,7); ctx.fill(); continue; }
+      ctx.beginPath(); ctx.moveTo(p[0],p[1]);
+      for(let i=2;i<p.length-2;i+=2) ctx.quadraticCurveTo(p[i],p[i+1],(p[i]+p[i+2])/2,(p[i+1]+p[i+3])/2);
+      ctx.lineTo(p[p.length-2],p[p.length-1]); ctx.stroke();
+    } else if(m.t==='tx'){
+      ctx.fillStyle=c; ctx.font=`${m.size||20}px ${getComputedStyle(document.body).fontFamily}`; ctx.textBaseline='top';
+      ctx.fillText(m.text, m.x, m.y);
+    }
+  }
+}
+function paintSquare(id, q){
+  ctx.save();
+  ctx.translate(q.x,q.y); ctx.rotate(q.r); ctx.translate(-S/2,-S/2);
+  ctx.shadowColor='rgba(0,0,0,.12)'; ctx.shadowBlur=14/view.s; ctx.shadowOffsetY=3/view.s;
+  ctx.fillStyle=col.paper; ctx.fillRect(0,0,S,S);
+  ctx.shadowColor='transparent';
+  ctx.strokeStyle=col.edge; ctx.lineWidth=1/view.s; ctx.strokeRect(0,0,S,S);
+  ctx.save(); ctx.beginPath(); ctx.rect(0,0,S,S); ctx.clip(); paintItems(q); ctx.restore();
+  if(id===mySq || id===adminSel){
+    ctx.strokeStyle = id===adminSel ? col.ink1 : col.mine; ctx.lineWidth=2/view.s; ctx.setLineDash([6/view.s,5/view.s]);
+    ctx.strokeRect(-3/view.s,-3/view.s,S+6/view.s,S+6/view.s); ctx.setLineDash([]);
+  }
+  if(id===mySq){ // rotate handle
+    ctx.fillStyle=col.paper; ctx.strokeStyle=col.mine; ctx.lineWidth=2/view.s;
+    ctx.beginPath(); ctx.arc(S+18,-18,11/view.s,0,7); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(S+18,-18,5/view.s,-2.5,1.6); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// network mode: one circle per square, area by views
+let bubbles = [];
+function layoutBubbles(){
+  const ids=[...squares.keys()], max=Math.max(1,...ids.map(i=>counts[i]||0));
+  const prev=new Map(bubbles.map(b=>[b.id,b]));
+  bubbles = ids.map(id=>{ const q=squares.get(id), n=counts[id]||0, p=prev.get(id);
+    return {id, n, R: 70 + 230*Math.sqrt(n/max), x:p?p.x:q.x, y:p?p.y:q.y, top: n>0 && n===max}; });
+  for(let it=0; it<60; it++){
+    for(let i=0;i<bubbles.length;i++) for(let j=i+1;j<bubbles.length;j++){
+      const a=bubbles[i], b=bubbles[j]; let dx=b.x-a.x, dy=b.y-a.y, d=Math.hypot(dx,dy)||.01; const m=a.R+b.R+16;
+      if(d<m){ const k=(m-d)/2/d; dx*=k; dy*=k; a.x-=dx; a.y-=dy; b.x+=dx; b.y+=dy; }
+    }
+  }
+}
+function paintBubbles(){
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  for(const b of bubbles){
+    const q=squares.get(b.id); if(!q) continue;
+    ctx.save(); ctx.translate(b.x,b.y);
+    ctx.beginPath(); ctx.arc(0,0,b.R,0,7); ctx.fillStyle=col.paper; ctx.fill();
+    ctx.save(); ctx.clip(); const k=(2*b.R)/S*1.05; ctx.scale(k,k); ctx.translate(-S/2,-S/2); paintItems(q); ctx.restore();
+    ctx.lineWidth=(b.top?3:1)/view.s; ctx.strokeStyle=b.top?col.mine:col.edge; ctx.beginPath(); ctx.arc(0,0,b.R,0,7); ctx.stroke();
+    ctx.fillStyle=col.muted; ctx.font=`${12/view.s}px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.fillText(b.n===1?'צפייה אחת':`${b.n} צפיות`, 0, b.R+6/view.s);
+    ctx.restore();
+  }
+}
+
+function render(){
+  raf=0;
+  ctx.setTransform(1,0,0,1,0,0); ctx.fillStyle=col.desk; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.setTransform(dpr*view.s,0,0,dpr*view.s,dpr*view.x,dpr*view.y);
+  if(net){ paintBubbles(); }
+  else{
+    const tl=toWorld(0,0), br=toWorld(innerWidth,innerHeight), pad=S;
+    [...squares].sort((a,b)=>a[1].z-b[1].z).forEach(([id,q])=>{
+      if(q.x<tl.x-pad||q.x>br.x+pad||q.y<tl.y-pad||q.y>br.y+pad) return;
+      paintSquare(id,q);
+    });
+  }
+  $('hint').hidden = squares.size>0 || day===null;
+}
+
+// ---------- input ----------
+const ptrs=new Map(); let pinch=null, pan=null, drag=null, tap=null;
+cv.addEventListener('pointerdown', e=>{
+  cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===2){ localStroke=null; pan=drag=null; const p=pp(); pinch={...p, v:{...view}}; draw(); return; }
+  if(ptrs.size>2) return;
+  const w=toWorld(e.clientX,e.clientY);
+  tap={x:e.clientX,y:e.clientY};
+  if(net){ pan={x:e.clientX,y:e.clientY}; return; }
+  const q=mySq && squares.get(mySq);
+  if(q){
+    const h=toScreen(...Object.values(rotHandle(q)));
+    if(Math.hypot(h.x-e.clientX,h.y-e.clientY)<22){ drag={kind:'rot', a0:Math.atan2(w.y-q.y,w.x-q.x)-q.r}; return; }
+    const l=toLocal(q,w), top=topSquareAt(w);
+    const onMine = inside(l) && (top && top[0]===mySq || mode==='move');
+    if(onMine && mode==='move'){ drag={kind:'move', dx:w.x-q.x, dy:w.y-q.y}; cv.classList.add('grabbing'); return; }
+    if(onMine && mode==='draw'){ localStroke={t:'st',id:rid(),ink,w:Math.max(1.5,Math.min(8,3/view.s)),pts:[r1(l.x),r1(l.y)]}; draw(); return; }
+    if(onMine && mode==='text'){ e.preventDefault(); openText(e.clientX,e.clientY,l); return; }
+  }
+  pan={x:e.clientX,y:e.clientY}; cv.classList.add('grabbing');
+});
+const r1=n=>Math.round(n*10)/10;
+cv.addEventListener('pointermove', e=>{
+  if(!ptrs.has(e.pointerId)) return; ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch){ const p=pp(), s=Math.min(6,Math.max(.08,pinch.v.s*p.d/pinch.d)), k=s/pinch.v.s;
+    view={s, x:p.mx-(pinch.mx-pinch.v.x)*k, y:p.my-(pinch.my-pinch.v.y)*k}; draw(); return; }
+  const w=toWorld(e.clientX,e.clientY), q=mySq&&squares.get(mySq);
+  if(drag && q){
+    if(drag.kind==='move'){ q.x=w.x-drag.dx; q.y=w.y-drag.dy; }
+    else q.r=Math.atan2(w.y-q.y,w.x-q.x)-drag.a0;
+    q.z=Number.MAX_SAFE_INTEGER; draw(); return;
+  }
+  if(localStroke && q){ const l=toLocal(q,w), p=localStroke.pts;
+    if(Math.hypot(l.x-p[p.length-2],l.y-p[p.length-1])>1.5/view.s && p.length<2998){ p.push(r1(Math.max(-20,Math.min(S+20,l.x))), r1(Math.max(-20,Math.min(S+20,l.y)))); draw(); } return; }
+  if(pan){ view.x+=e.clientX-pan.x; view.y+=e.clientY-pan.y; pan={x:e.clientX,y:e.clientY}; draw(); }
+});
+function end(e){
+  ptrs.delete(e.pointerId); cv.classList.remove('grabbing');
+  if(pinch){ if(ptrs.size<2) pinch=null; return; }
+  const wasTap = tap && Math.hypot(e.clientX-tap.x,e.clientY-tap.y)<6; tap=null;
+  if(drag){ const q=squares.get(mySq); drag=null; if(q){ pendingMove++; send({t:'sq',x:q.x,y:q.y,r:q.r}).finally(()=>pendingMove--); } return; }
+  if(localStroke){ const s=localStroke, q=squares.get(mySq); localStroke=null;
+    if(q){ q.items.push(s); q.z=Number.MAX_SAFE_INTEGER; ui(); draw();
+      send(s).catch(()=>{ q.items=q.items.filter(i=>i!==s); draw(); ui(); }); }
+    return; }
+  pan=null;
+  if(wasTap && net){ const w=toWorld(e.clientX,e.clientY); const b=bubbles.find(b=>Math.hypot(b.x-w.x,b.y-w.y)<b.R);
+    if(b){ net=false; ui(); flyTo(b.id); } }
+  else if(wasTap && admin){ const t=topSquareAt(toWorld(e.clientX,e.clientY)); adminSel=t?t[0]:null; $('adel').disabled=!adminSel; draw(); }
+}
+cv.addEventListener('pointerup', end);
+cv.addEventListener('pointercancel', e=>{ ptrs.delete(e.pointerId); pinch=pan=null; localStroke=null; if(drag){drag=null;} draw(); });
+function pp(){ const [a,b]=[...ptrs.values()]; return {mx:(a.x+b.x)/2,my:(a.y+b.y)/2,d:Math.hypot(a.x-b.x,a.y-b.y)||1}; }
+cv.addEventListener('wheel', e=>{
+  e.preventDefault();
+  if(e.ctrlKey||e.metaKey||(!e.deltaX&&Math.abs(e.deltaY)>=40)){
+    const s=Math.min(6,Math.max(.08,view.s*Math.exp(-e.deltaY*.0015))), k=s/view.s;
+    view={s, x:e.clientX-(e.clientX-view.x)*k, y:e.clientY-(e.clientY-view.y)*k};
+  } else { view.x-=e.deltaX; view.y-=e.deltaY; }
+  draw();
+},{passive:false});
+
+// text
+const ti=$('ti'); let tiAt=null;
+function openText(sx,sy,l){
+  commitText(); tiAt={x:l.x,y:l.y,ink,size:20};
+  ti.hidden=false; ti.value=''; ti.style.left=sx+'px'; ti.style.top=sy+'px';
+  ti.style.fontSize=(20*view.s)+'px'; ti.style.color=col['ink'+ink];
+  ti.focus();
+}
+function commitText(){
+  if(!tiAt) return; const t=ti.value.trim(), at=tiAt; tiAt=null; ti.hidden=true; ti.value='';
+  const q=squares.get(mySq); if(!t||!q) return;
+  const it={t:'tx',id:rid(),ink:at.ink,size:at.size,x:Math.round(Math.max(0,Math.min(S,at.x))),y:Math.round(Math.max(0,Math.min(S,at.y))),text:t};
+  q.items.push(it); ui(); draw(); send(it).catch(()=>{ q.items=q.items.filter(i=>i!==it); draw(); ui(); });
+}
+ti.addEventListener('keydown',e=>{ if(e.key==='Enter') commitText(); if(e.key==='Escape'){ tiAt=null; ti.hidden=true; } });
+ti.addEventListener('blur',commitText);
+
+// ---------- views ----------
+const seenTime = {}; let queue = [];
+function seenKey(){ return 'bp-seen-'+day; }
+function reported(){ try{ return new Set(JSON.parse(store.get(seenKey())||'[]')); }catch{ return new Set(); } }
+setInterval(()=>{
+  if(document.hidden || net || !day) return;
+  const done = reported();
+  for(const [id,q] of squares){
+    if(id===mySq || done.has(id) || queue.includes(id)) continue;
+    const p=toScreen(q.x,q.y), big=S*view.s>=90;
+    if(big && p.x>0 && p.y>0 && p.x<innerWidth && p.y<innerHeight){ if((seenTime[id]=(seenTime[id]||0)+1)>=2) queue.push(id); }
+    else seenTime[id]=0;
+  }
+}, 1000);
+setInterval(async ()=>{
+  if(!queue.length) return;
+  const batch=queue.splice(0,40);
+  try{ await post('/api/view',{sqs:batch}); const d=reported(); batch.forEach(b=>d.add(b)); store.set(seenKey(), JSON.stringify([...d])); }
+  catch{ queue.unshift(...batch); }
+}, 4000);
+async function loadCounts(){
+  try{ const r=await fetch('/api/views',{cache:'no-store'}); const d=await r.json(); if(d.day===day) counts=d.counts||{}; }catch{}
+  layoutBubbles(); draw();
+}
+setInterval(()=>{ if(net && !document.hidden) loadCounts(); }, 6000);
+
+// ---------- admin (#admin) ----------
+let admin = location.hash==='#admin';
+if(admin){
+  $('admin').hidden=false;
+  try{ $('akey').value=sessionStorage.getItem('bp-akey')||''; }catch{}
+  $('adel').onclick = async ()=>{
+    const key=$('akey').value; try{ sessionStorage.setItem('bp-akey',key); }catch{}
+    try{ const r=await fetch('/api/admin',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key,sq:adminSel})});
+      const d=await r.json(); if(!r.ok) return note(d.error==='wrong key'?'מפתח שגוי':'המחיקה נכשלה');
+      apply(d.ev); adminSel=null; $('adel').disabled=true; draw(); note('הריבוע נמחק'); }catch{ note('המחיקה נכשלה'); }
+  };
+}
+
+// ---------- clock ----------
+function tick(){
+  const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Jerusalem',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(new Date());
+  const g=t=>+p.find(x=>x.type===t).value, left=86400-((g('hour')%24)*3600+g('minute')*60+g('second'));
+  const f=n=>String(n).padStart(2,'0');
+  $('clock').textContent=`נמחק בעוד ${f(Math.floor(left/3600))}:${f(Math.floor(left%3600/60))}:${f(left%60)}`;
+}
+
+// ---------- boot ----------
+addEventListener('resize', resize);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) poll(); });
+readColors(); resize(); tick(); setInterval(tick,1000);
+poll().then(()=>{ ui(); if(mySq && squares.has(mySq)) flyTo(mySq); });
+setInterval(poll, 1500);
+ui();
+})();
+</script>
+</body>
+</html>
