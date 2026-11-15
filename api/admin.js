@@ -10,11 +10,13 @@ export default async function handler(req, res) {
   if (!(await isAdmin(b.session))) return json(res, 401, { error: 'sign in again' });
   if (typeof b.sq !== 'string' || !/^s[a-z0-9]{1,16}$/.test(b.sq)) return json(res, 400, { error: 'bad request' });
   const day = dayKey(), k = K(day);
-  if (!(await redis.hget(k.own, b.sq))) return json(res, 404, { error: 'no such drawing' });
+  const who = await redis.hget(k.own, b.sq);
+  if (!who) return json(res, 404, { error: 'no such drawing' });
   if (b.id != null) {
     if (typeof b.id !== 'string' || !/^[a-z0-9]{4,16}$/.test(b.id)) return json(res, 400, { error: 'bad request' });
     return json(res, 200, { ev: await append(day, { t: 'un', sq: b.sq, id: b.id }) });
   }
   await redis.hdel(k.own, b.sq);
+  await redis.sadd(k.ban, who); // whoever made it cannot draw again today
   json(res, 200, { ev: await append(day, { t: 'del', sq: b.sq }) });
 }

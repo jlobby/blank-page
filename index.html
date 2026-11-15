@@ -114,7 +114,11 @@ if(!myName || oldAuto.test(myName)){ myName = randomName(); store.set('bp-name',
 let day = null, lastV = 0;
 const applied = new Set();
 const squares = new Map();          // sq -> {x,y,r,z,items:[]}
-let mySq = null, mode = 'draw', ink = 0, net = false;
+let mySq = null, mode = 'draw', ink = 0, net = false;   // mySq = the creation you last worked on
+const mine = new Set();                                    // all your creations today (temp ids start with "_")
+const MAX_MINE = 10;
+const saveMine = () => store.set('bp-sqs-'+day, JSON.stringify([...mine].filter(id=>!id.startsWith('_'))));
+function loadMine(){ mine.clear(); try{ JSON.parse(store.get('bp-sqs-'+day)||'[]').forEach(id=>mine.add(id)); }catch{} const old=store.get('bp-sq-'+day); if(old) mine.add(old); mySq=[...mine].pop()||null; }
 let view = {x: innerWidth/2, y: innerHeight/2.3, s: Math.min(1, innerWidth/(S*1.4))};
 let counts = {};
 let pendingMove = 0;
@@ -135,11 +139,11 @@ function apply(e){
     let q = squares.get(e.sq);
     if(!q){ q={x:e.x,y:e.y,r:e.r,z:e.z,items:[]}; squares.set(e.sq,q); }
     if(e.name) q.name = e.name;
-    else if(!(e.sq===mySq && (pendingMove>0 || drag))){ q.x=e.x; q.y=e.y; q.r=e.r; }
+    if(!(mine.has(e.sq) && (pendingMove>0 || (drag && drag.sq===e.sq)))){ q.x=e.x; q.y=e.y; q.r=e.r; }
     q.z = Math.max(q.z, e.z);
   } else if(e.t==='del'){
     squares.delete(e.sq);
-    if(e.sq===mySq){ mySq=null; ui(); note('הריבוע שלך הוסר.'); }
+    if(mine.has(e.sq)){ mine.delete(e.sq); saveMine(); if(mySq===e.sq) mySq=[...mine].pop()||null; ui(); note('יצירה שלך הוסרה.'); }
     if(e.sq===adminSel){ adminSel=null; adminItem=null; if(admin) adminUi(); }
   } else {
     const q = squares.get(e.sq); if(!q) return;
@@ -160,7 +164,7 @@ async function poll(){
     const d = await r.json();
     if(d.reset && d.day!==day){
       squares.clear(); applied.clear(); lastV=0; counts={};
-      day = d.day; mySq = store.get('bp-sq-'+day); ui();
+      day = d.day; loadMine(); ui();
     }
     for(const e of d.events){ apply(e); lastV=Math.max(lastV,e.v); }
     lastV = Math.max(lastV, d.v);
@@ -175,38 +179,51 @@ async function post(path, payload){
   const r = await fetch(path, {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({token, day, ...payload})});
   const d = await r.json().catch(()=>({}));
   if(!r.ok){
-    if(r.status===429) note('לאט לאט. נסו שוב בעוד דקה.');
+    if(r.status===429) note(d.error==='limit' ? `הגעת ל-${d.max} יצירות היום.` : 'לאט לאט. נסו שוב בעוד דקה.');
     else if(r.status===507) note('הדף מלא להיום. בחצות הוא מתרוקן.');
-    else if(r.status===403){ note('הריבוע הזה כבר לא שלך.'); }
+    else if(r.status===403){ note(d.error==='blocked today' ? 'אי אפשר לצייר יותר היום.' : 'היצירה הזו כבר לא שלך.'); }
     else if(r.status===409) poll();
     throw d;
   }
   return d;
 }
 
-async function send(ev){
-  if(claimP) await claimP;
-  if(!mySq || mySq==='_new') throw 0;
-  return post('/api/act', {sq: mySq, ev}).then(d=>{ apply(d.ev); const q=squares.get(mySq); if(q) q.z=d.ev.v; lastV=Math.max(lastV,d.ev.v); draw(); return d; });
+async function send(ev, sq=mySq){
+  sq = sq && rs(sq);
+  if(sq && sq.startsWith('_')) sq = await claims.get(sq);   // wait until a new creation exists on the server
+  if(!sq) throw 0;
+  return post('/api/act', {sq, ev}).then(d=>{ apply(d.ev); const q=squares.get(sq); if(q) q.z=d.ev.v; lastV=Math.max(lastV,d.ev.v); draw(); return d; });
 }
 
 // ---------- claiming ----------
-let claimP = null;
-function claimAt(w){ // square around where the person first touched, kept fully on screen; drawing starts at once
+const claims = new Map();   // temp id -> promise of the real id
+const alias = new Map();    // temp id -> real id, once the server has made it
+const rs = id => alias.get(id) || id;
+function claimAt(w){ // a new creation around where the person touched, kept fully on screen; drawing starts at once
+  if(mine.size >= MAX_MINE){ note(`הגעת ל-${MAX_MINE} יצירות היום.`); spill(true); return null; }
   const barTop=document.querySelector('.tools').getBoundingClientRect().top;
   const tl=toWorld(0, 40), br=toWorld(innerWidth, barTop-12), h=S/2;
   const fit=(v,a,b)=> b-a>=S ? Math.min(Math.max(v,a+h),b-h) : (a+b)/2;
+  const tid = '_'+rid(), first = mine.size===0 && !store.get('bp-named-'+day);
   const tmp = {x:Math.round(fit(w.x,tl.x,br.x)), y:Math.round(fit(w.y,tl.y,br.y)), r:0, z:Number.MAX_SAFE_INTEGER, items:[], name:myName};
-  squares.set('_new', tmp); mySq = '_new'; ui();
-  claimP = post('/api/claim', {x:tmp.x, y:tmp.y, name:myName}).then(d=>{
-    squares.delete('_new');
-    const known = squares.get(d.sq);
-    if(known){ known.items.push(...tmp.items); } else squares.set(d.sq, tmp);
-    day = d.day; mySq = d.sq; store.set('bp-sq-'+day, mySq);
-    if(d.ev){ apply(d.ev); setTimeout(()=>openName(true), 900); }
-    ui(); draw();
-  }).catch(e=>{ squares.delete('_new'); mySq=null; ui(); draw(); throw e; }).finally(()=>{ claimP=null; });
-  return tmp;
+  squares.set(tid, tmp); mine.add(tid); mySq = tid; ui();
+  const p = post('/api/claim', {x:tmp.x, y:tmp.y, name:myName}).then(d=>{
+    alias.set(tid, d.sq); squares.delete(tid); mine.delete(tid); squares.set(d.sq, tmp); mine.add(d.sq);
+    if(mySq===tid) mySq = d.sq;
+    day = d.day; saveMine();
+    if(d.ev) apply(d.ev);
+    if(first){ store.set('bp-named-'+day,'1'); setTimeout(()=>openName(true), 900); }
+    ui(); draw(); return d.sq;
+  }).catch(e=>{ squares.delete(tid); mine.delete(tid); if(mySq===tid) mySq=[...mine].pop()||null; ui(); draw(); return null; })
+    .finally(()=>setTimeout(()=>claims.delete(tid), 60000));
+  claims.set(tid, p);
+  return tid;
+}
+function myAt(w, margin=0){ // your topmost creation under a point (margin lets a stroke start just outside the edge)
+  let best=null;
+  for(const id of mine){ const q=squares.get(id); if(!q) continue; const l=toLocal(q,w);
+    if(l.x>=-margin && l.y>=-margin && l.x<=S+margin && l.y<=S+margin && (!best || q.z>squares.get(best).z)) best=id; }
+  return best;
 }
 function flyTo(sq){
   const q = squares.get(sq); if(!q) return;
@@ -232,11 +249,11 @@ function fitBubbles(){
 }
 $('undo').onclick = () => {
   const q = squares.get(mySq); if(!q||!q.items.length) return;
-  const it = q.items.pop(); draw(); ui();
-  send({t:'un', id: it.id}).catch(()=>{ q.items.push(it); draw(); });
+  const sq = mySq, it = q.items.pop(); draw(); ui();
+  send({t:'un', id: it.id}, sq).catch(()=>{ q.items.push(it); draw(); });
 };
 function ui(){
-  const has = !!mySq;
+  const has = mine.size>0;
   for(const m of ['draw','text','move']){ $('m-'+m).hidden=net; $('m-'+m).setAttribute('aria-pressed', mode===m); }
   $('inks').hidden = net; $('me').hidden = net; if(net) closeName(); document.querySelectorAll('.sep').forEach(e=>e.hidden=net); document.querySelectorAll('.mineonly').forEach(e=>e.hidden=!has||net);
   const q = squares.get(mySq); $('undo').disabled = !q || !q.items.length;
@@ -260,8 +277,7 @@ function saveName(){
   closeName();
   if(n===myName) return;
   myName = n; store.set('bp-name', n);
-  const q = squares.get(mySq); if(q) q.name = n;
-  if(mySq && mySq!=='_new') send({t:'nm', name:n}).catch(()=>{});
+  (async()=>{ for(const id of [...mine]){ const q=squares.get(id); if(q) q.name=n; await send({t:'nm', name:n}, id).catch(()=>{}); } })();
   draw();
 }
 $('me').onclick = () => $('namebox').hidden ? openName(false) : closeName();
@@ -295,7 +311,7 @@ function draw(){ if(!raf) raf=requestAnimationFrame(render); }
 let localStroke = null, adminSel = null, spillUntil = 0, reveal = null, selBubble = null, maybe = null;
 function topWithInkAt(w, skipMine){
   let best=null;
-  for(const [id,q] of squares){ if(!q.items.length || (skipMine && id===mySq)) continue; if(inside(toLocal(q,w)) && (!best || q.z>best[1].z)) best=[id,q]; }
+  for(const [id,q] of squares){ if(!q.items.length || (skipMine && mine.has(id))) continue; if(inside(toLocal(q,w)) && (!best || q.z>best[1].z)) best=[id,q]; }
   return best;
 }
 function inkBottom(q){ // lowest point of the drawing, in the square's own coords
@@ -342,7 +358,7 @@ function textLines(m){ // wrap to the room left in the square, so nothing is cut
 }
 function paintItems(q, over, extra){
   ctx.lineCap='round'; ctx.lineJoin='round';
-  const list = !over && localStroke && q===squares.get(mySq) ? q.items.concat([localStroke]) : q.items;
+  const list = !over && localStroke && q===squares.get(rs(localStroke.sq)) ? q.items.concat([localStroke]) : q.items;
   for(const m of list){
     const c = over || col['ink'+(m.ink|0)] || col.ink0;
     if(m.t==='st'){
@@ -443,23 +459,31 @@ cv.addEventListener('pointerdown', e=>{
   if(!$('namebox').hidden && document.activeElement!==$('name')) closeName();
   if(!$('tp').hidden){ ptrs.delete(e.pointerId); tap=null; return; }
   if(adminOn()){ pan={x:e.clientX,y:e.clientY}; cv.classList.add('grabbing'); return; }
-  if(mode==='draw'){ // in text mode a tap always writes
-    const mine = mySq && squares.get(mySq);
-    if(!(mine && inside(toLocal(mine,w))) && topWithInkAt(w,true)){ maybe={w, x:e.clientX, y:e.clientY}; return; }
-  }
+  if(mode==='draw' && !myAt(w,24) && topWithInkAt(w,true)){ // a tap on someone's drawing shows their name; a drag still draws
+    maybe={w, x:e.clientX, y:e.clientY}; return; }
   startAt(e, w);
 });
 function startAt(e, w){
-  let q=mySq && squares.get(mySq);
-  if(!q && mode!=='move' && day){ q = claimAt(w); }
-  if(q){
-    const h=toScreen(...Object.values(rotHandle(q)));
-    if(edgeAlpha()>0 && Math.hypot(h.x-e.clientX,h.y-e.clientY)<22){ drag={kind:'rot', a0:Math.atan2(w.y-q.y,w.x-q.x)-q.r}; return; }
-    const l=toLocal(q,w);
-    if(mode==='move' && inside(l)){ drag={kind:'move', dx:w.x-q.x, dy:w.y-q.y}; cv.classList.add('grabbing'); return; }
-    if(mode==='draw'){ if(!inside(l)) spill(); localStroke={t:'st',id:rid(),ink,w:Math.max(1.5,Math.min(8,3/view.s)),pts:[r1(cl(l.x)),r1(cl(l.y))]}; draw(); return; }
-    if(mode==='text'){ e.preventDefault?.(); if(!inside(l)){ spill(); return; }
-      const hit=textAt(q,l); openPanel(hit ? {x:hit.x,y:hit.y,size:20} : {x:l.x,y:l.y,size:20}, hit); return; }
+  if(mySq) mySq = rs(mySq);
+  const act = mySq && squares.get(mySq);
+  if(act && edgeAlpha()>0){ // rotate handle of the creation whose outline is showing
+    const h=toScreen(...Object.values(rotHandle(act)));
+    if(Math.hypot(h.x-e.clientX,h.y-e.clientY)<22){ drag={kind:'rot', sq:mySq, a0:Math.atan2(w.y-act.y,w.x-act.x)-act.r}; return; }
+  }
+  if(mode==='move'){
+    const id=myAt(w);
+    if(id){ const q=squares.get(id); mySq=id; ui(); drag={kind:'move', sq:id, dx:w.x-q.x, dy:w.y-q.y}; cv.classList.add('grabbing'); return; }
+  } else if(mode==='draw'){
+    let id = myAt(w,24);                  // inside (or just at the edge of) one of yours: keep drawing there
+    if(!id && day) id = claimAt(w);       // anywhere else: a new creation right here
+    if(id){ const q=squares.get(id), l=toLocal(q,w); mySq=id; ui(); if(!inside(l)) spill();
+      localStroke={t:'st',id:rid(),sq:id,ink,w:Math.max(1.5,Math.min(8,3/view.s)),pts:[r1(cl(l.x)),r1(cl(l.y))]}; draw(); return; }
+  } else if(mode==='text'){
+    e.preventDefault?.();
+    const id = myAt(w);
+    if(id){ const q=squares.get(id), l=toLocal(q,w), hit=textAt(q,l); mySq=id; ui();
+      openPanel(hit ? {x:hit.x,y:hit.y,size:20} : {x:l.x,y:l.y,size:20}, hit, id); return; }
+    if(day){ openPanel(null, null, null, w); return; }   // the creation is made only when the text is saved
   }
   pan={x:e.clientX,y:e.clientY}; cv.classList.add('grabbing');
 }
@@ -472,7 +496,8 @@ cv.addEventListener('pointermove', e=>{
     if(Math.hypot(e.clientX-maybe.x,e.clientY-maybe.y)<6) return;
     const m=maybe; maybe=null; startAt({clientX:m.x, clientY:m.y}, m.w);
   }
-  const w=toWorld(e.clientX,e.clientY), q=mySq&&squares.get(mySq);
+  const w=toWorld(e.clientX,e.clientY);
+  let q = drag ? squares.get(rs(drag.sq)) : localStroke ? squares.get(rs(localStroke.sq)) : null;
   if(drag && q){
     if(drag.kind==='move'){ q.x=w.x-drag.dx; q.y=w.y-drag.dy; }
     else q.r=Math.atan2(w.y-q.y,w.x-q.x)-drag.a0;
@@ -489,10 +514,10 @@ function end(e){
   const wasTap = tap && Math.hypot(e.clientX-tap.x,e.clientY-tap.y)<6; tap=null;
   if(adminOn() && !net){ pan=null; if(wasTap) adminPick(toWorld(e.clientX,e.clientY)); return; }
   if(maybe){ const t=topWithInkAt(maybe.w,true); maybe=null; if(t){ reveal={sq:t[0], until:performance.now()+4000}; draw(); return; } }
-  if(drag){ const q=squares.get(mySq); drag=null; spill(); if(q){ pendingMove++; send({t:'sq',x:q.x,y:q.y,r:q.r}).finally(()=>pendingMove--); } return; }
-  if(localStroke){ const s=localStroke, q=squares.get(mySq); localStroke=null;
-    if(q){ q.items.push(s); q.z=Number.MAX_SAFE_INTEGER; ui(); draw();
-      send(s).catch(()=>{ q.items=q.items.filter(i=>i!==s); draw(); ui(); }); }
+  if(drag){ const sq=rs(drag.sq), q=squares.get(sq); drag=null; spill(); if(q){ pendingMove++; send({t:'sq',x:q.x,y:q.y,r:q.r}, sq).finally(()=>pendingMove--); } return; }
+  if(localStroke){ const {sq:sq0, ...st}=localStroke, sq=rs(sq0), q=squares.get(sq); localStroke=null;
+    if(q){ q.items.push(st); q.z=Number.MAX_SAFE_INTEGER; ui(); draw();
+      send(st, sq).catch(()=>{ q.items=q.items.filter(i=>i!==st); draw(); ui(); }); }
     return; }
   pan=null;
   if(wasTap && net){ const w=toWorld(e.clientX,e.clientY); const b=bubbles.find(b=>Math.hypot(b.x-w.x,b.y-w.y)<b.R);
@@ -533,9 +558,9 @@ function textAt(q, l){ // own text under a tap, if any
     if(l.x>=m.x-6 && l.x<=m.x+w+6 && l.y>=m.y-6 && l.y<=m.y+h+6) return m; }
   return null;
 }
-function openPanel(at, edit){
+function openPanel(at, edit, sq, w){ // sq: the creation it goes in; none yet = make one at w on save
   closeName();
-  tp={at, edit, ink: edit ? edit.ink : ink};
+  tp={at: at || {x:S/2-60, y:S/2-10, size:20}, edit, sq, w, ink: edit ? edit.ink : ink};
   tpa.value = edit ? edit.text : ''; tpa.style.color = col['ink'+tp.ink];
   $('tpdel').hidden = !edit; $('tp').hidden = false; tpInput(); tpa.focus();
 }
@@ -547,28 +572,30 @@ function tpInput(){
   $('tp').classList.toggle('over', over); if(over) spill(true);
 }
 function savePanel(){
-  if(!tp) return; const q=squares.get(mySq), {at,edit,ink:k}=tp; let t=tpa.value.trim().replace(/\n{3,}/g,'\n\n');
-  closePanel(); if(!q) return;
-  if(!t){ if(edit) removeText(q, edit); return; }
+  if(!tp) return; let {at,edit,sq,w,ink:k}=tp; let t=tpa.value.trim().replace(/\n{3,}/g,'\n\n');
+  closePanel(); if(!t && !edit) return;
+  if(!sq){ sq = claimAt(w); if(!sq) return; const l=toLocal(squares.get(sq), w); at={x:l.x, y:l.y, size:20}; }
+  sq=rs(sq); const q=squares.get(sq); if(!q) return; mySq=sq;
+  if(!t){ if(edit) removeText(q, edit, sq); return; }
   let f=fitText(t, at);
   while(f.over && t.length>1){ t=t.slice(0,-1); f=fitText(t,at); }
   if(edit){
     const before={...edit}; Object.assign(edit,{size:f.size,x:f.x,y:f.y,text:t}); delete edit._lines; delete edit._bw; draw();
-    send({t:'te',id:edit.id,ink:edit.ink,size:f.size,x:f.x,y:f.y,text:t}).catch(()=>{ Object.assign(edit,before); delete edit._lines; delete edit._bw; draw(); });
+    send({t:'te',id:edit.id,ink:edit.ink,size:f.size,x:f.x,y:f.y,text:t}, sq).catch(()=>{ Object.assign(edit,before); delete edit._lines; delete edit._bw; draw(); });
   } else {
     const it={t:'tx',id:rid(),ink:k,size:f.size,x:f.x,y:f.y,text:t};
-    q.items.push(it); ui(); draw(); send(it).catch(()=>{ q.items=q.items.filter(i=>i!==it); draw(); ui(); });
+    q.items.push(it); ui(); draw(); send(it, sq).catch(()=>{ q.items=q.items.filter(i=>i!==it); draw(); ui(); });
   }
 }
-function removeText(q, it){
+function removeText(q, it, sq){
   q.items=q.items.filter(i=>i!==it); ui(); draw();
-  send({t:'un', id: it.id}).catch(()=>{ q.items.push(it); draw(); ui(); });
+  send({t:'un', id: it.id}, sq).catch(()=>{ q.items.push(it); draw(); ui(); });
 }
 tpa.addEventListener('input', tpInput);
 tpa.addEventListener('keydown', e=>{ if(e.key==='Escape') closePanel(); if(e.key==='Enter' && (e.ctrlKey||e.metaKey)) savePanel(); });
 $('tpok').onclick = savePanel;
 $('tpx').onclick = closePanel;
-$('tpdel').onclick = () => { if(!tp||!tp.edit) return; const q=squares.get(mySq), it=tp.edit; closePanel(); if(q) removeText(q,it); };
+$('tpdel').onclick = () => { if(!tp||!tp.edit) return; const sq=rs(tp.sq), q=squares.get(sq), it=tp.edit; closePanel(); if(q) removeText(q,it,sq); };
 
 // ---------- views ----------
 const seenTime = {}; let queue = [];
@@ -578,7 +605,7 @@ setInterval(()=>{
   if(document.hidden || net || !day) return;
   const done = reported();
   for(const [id,q] of squares){
-    if(id===mySq || done.has(id) || queue.includes(id)) continue;
+    if(mine.has(id) || done.has(id) || queue.includes(id)) continue;
     const p=toScreen(q.x,q.y), big=S*view.s>=90;
     if(big && p.x>0 && p.y>0 && p.x<innerWidth && p.y<innerHeight){ if((seenTime[id]=(seenTime[id]||0)+1)>=2) queue.push(id); }
     else seenTime[id]=0;
@@ -656,6 +683,7 @@ if(admin){
   adminUi();
 }
 
+if(location.hostname==='localhost') window.__bp = { squares, mine, get mySq(){ return mySq; }, myAt, toWorld, get view(){ return view; } };
 // ---------- clock ----------
 function tick(){
   const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Jerusalem',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(new Date());
@@ -668,7 +696,7 @@ function tick(){
 addEventListener('resize', resize);
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) poll(); });
 readColors(); resize(); tick(); setInterval(tick,1000);
-poll().then(()=>{ ui(); if(mySq && squares.has(mySq)) flyTo(mySq); });
+poll().then(()=>{ ui(); });
 setInterval(poll, 1500);
 ui();
 })();

@@ -38,6 +38,7 @@ export default async function handler(req, res) {
   const day = dayKey(), k = K(day);
   if (b.day && b.day !== day) return json(res, 409, { error: 'new day' });
   if (typeof b.sq !== 'string' || (await redis.hget(k.own, b.sq)) !== me) return json(res, 403, { error: 'not your square' });
+  if (await redis.sismember(k.ban, me)) return json(res, 403, { error: 'blocked today' });
   if (!(await limit('act', ip(req), 300, 60))) return json(res, 429, { error: 'slow down' });
   const e = clean(b.ev);
   if (!e) return json(res, 400, { error: 'bad change' });
