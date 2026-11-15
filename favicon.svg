@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <style>
+    .sq{fill:none;stroke:#1f5fd1;stroke-width:3.5;stroke-dasharray:6 4.5;stroke-linecap:round}
+    .ink{fill:none;stroke:#1b1b1a;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+    @media (prefers-color-scheme:dark){.sq{stroke:#6b9dff}.ink{stroke:#ececea}}
+  </style>
+  <rect class="sq" x="6" y="14" width="40" height="40" rx="2"/>
+  <path class="ink" d="M13 36q4.5-11 9 0t9 0 9 0 9 0 9 0"/>
+</svg>
