@@ -1,5 +1,5 @@
 import { redis } from '../lib/store.js';
-import { K, dayKey, json, body, ip, owner, limit, append } from '../lib/util.js';
+import { K, dayKey, json, body, ip, owner, limit, append, cleanName } from '../lib/util.js';
 
 // POST /api/claim {token, x?, y?} -> {day, sq}: today's square for this browser, created where it was first touched
 export default async function handler(req, res) {
@@ -19,7 +19,8 @@ export default async function handler(req, res) {
     const a = n * 2.39996, rad = n === 1 ? 0 : 300 * Math.sqrt(n);
     x = Math.round(Math.cos(a) * rad); y = Math.round(Math.sin(a) * rad);
   }
-  const ev = await append(day, { t: 'sq', sq, x, y, r: 0 });
+  const name = cleanName(b.name);
+  const ev = await append(day, { t: 'sq', sq, x, y, r: 0, ...(name ? { name } : {}) });
   if (!ev) return json(res, 507, { error: 'page is full for today' });
   await Promise.all([redis.hset(k.who, { [me]: sq }), redis.hset(k.own, { [sq]: me })]);
   json(res, 200, { day, sq, ev });

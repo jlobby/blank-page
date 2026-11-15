@@ -1,5 +1,5 @@
 import { redis } from '../lib/store.js';
-import { K, S, dayKey, json, body, ip, owner, limit, append } from '../lib/util.js';
+import { K, S, dayKey, json, body, ip, owner, limit, append, cleanName } from '../lib/util.js';
 
 const num = (x, lo, hi) => typeof x === 'number' && Number.isFinite(x) ? Math.min(hi, Math.max(lo, x)) : null;
 const sid = x => typeof x === 'string' && /^[a-z0-9]{4,16}$/.test(x) ? x : null;
@@ -25,6 +25,7 @@ function clean(e) {
       return { t: 'tx', id: e.id, ink, size: num(e.size, 10, 60) ?? 20, x: Math.round(x), y: Math.round(y), text };
     }
     case 'un': return sid(e.id) ? { t: 'un', id: e.id } : null;
+    case 'nm': { const name = cleanName(e.name); return name ? { t: 'nm', name } : null; }
     default: return null;
   }
 }
