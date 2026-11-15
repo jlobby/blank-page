@@ -44,6 +44,7 @@ button.primary{background:var(--mine);color:#fff}
 #clock{right:max(16px,env(safe-area-inset-right));display:flex;align-items:center;gap:5px}
 #note{left:max(16px,env(safe-area-inset-left));max-width:55vw;text-align:left}
 #hint{position:fixed;inset:0;display:grid;place-items:center;color:var(--muted);opacity:.6;pointer-events:none}
+#ti.over{border-bottom:2px solid var(--ink1)}
 #ti{position:fixed;background:transparent;border:0;border-bottom:1px dashed var(--muted);outline:none;font-family:var(--ui);padding:0;min-width:140px;text-align:left;direction:auto}
 #namebox{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:6px;background:var(--bar);border:1px solid var(--line);border-radius:12px;padding:5px 6px 5px 10px;color:var(--muted);max-width:calc(100% - 32px)}
 #namebox input{font:inherit;font-size:15px;width:12em;max-width:52vw;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--fg);text-align:center;direction:auto}
@@ -58,7 +59,7 @@ button.primary{background:var(--mine);color:#fff}
 <div id="clock" class="corner" dir="ltr" title="הדף נמחק בחצות"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10M7 21h10"/><path d="M8 3c0 4 8 5 8 9s-8 5-8 9M16 3c0 4-8 5-8 9"/><path d="M16 21c0-4-8-5-8-9"/></svg><span id="clockt"></span></div>
 <div id="note" class="corner" dir="rtl"></div>
 <div id="namebox" hidden dir="rtl"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg><input id="name" maxlength="24" autocomplete="nickname" aria-label="השם שלי"><button id="nameok" class="icon" aria-label="שמור" title="שמור"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
-<input id="ti" hidden maxlength="200" autocomplete="off" aria-label="טקסט">
+<input id="ti" hidden maxlength="600" enterkeyhint="done" autocomplete="off" aria-label="טקסט">
 
 <div id="bar"><div class="tools" role="toolbar">
   <button id="m-draw" class="icon" aria-pressed="true" aria-label="עט" title="עט"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1-4.5L16 4.5a2.1 2.1 0 013 3L8 18.5 4 20z"/><path d="M14 6.5l3.5 3.5"/></svg></button>
@@ -295,7 +296,8 @@ function paintReveal(){
   ctx.fillText(q.name, p.x, p.y); ctx.restore(); draw();
 }
 function edgeAlpha(){ const left = spillUntil - performance.now(); if(left<=0) return 0; draw(); return Math.min(1, left/600); }
-function spill(){ spillUntil = performance.now() + 1800; draw(); }
+let spillRed = false;
+function spill(red){ spillUntil = performance.now() + 1800; spillRed = !!red; draw(); }
 
 let uiFont = null;
 const fontFor = size => `${size}px ${uiFont || (uiFont = getComputedStyle(document.body).fontFamily)}`;
@@ -327,9 +329,13 @@ function paintItems(q, over, extra){
       ctx.lineTo(p[p.length-2],p[p.length-1]); ctx.stroke();
     } else if(m.t==='tx'){
       ctx.fillStyle=c; ctx.font=fontFor(m.size||20); ctx.textBaseline='top'; ctx.textAlign='left';
-      ctx.direction = isRtl(m.text) ? 'rtl' : 'ltr';
-      textLines(m).forEach((ln,i)=>ctx.fillText(ln, m.x, m.y + i*(m.size||20)*1.25));
-      ctx.direction='ltr';
+      const rtl = isRtl(m.text), lines = textLines(m);
+      ctx.direction = rtl ? 'rtl' : 'ltr';
+      if(rtl){ // Hebrew lines line up on their right edge
+        if(m._bw==null) m._bw = Math.max(...lines.map(ln=>measure(ln, m.size||20)));
+        ctx.textAlign='right'; lines.forEach((ln,i)=>ctx.fillText(ln, m.x+m._bw, m.y + i*(m.size||20)*1.25));
+      } else lines.forEach((ln,i)=>ctx.fillText(ln, m.x, m.y + i*(m.size||20)*1.25));
+      ctx.direction='ltr'; ctx.textAlign='left';
     }
   }
 }
@@ -341,7 +347,7 @@ function paintSquare(id, q){
   ctx.restore();
   const a = id===adminSel ? 1 : id===mySq ? (drag ? 1 : edgeAlpha()) : 0;
   if(a>0){
-    ctx.globalAlpha=a; ctx.strokeStyle = id===adminSel ? col.ink1 : col.mine; ctx.lineWidth=2/view.s; ctx.setLineDash([6/view.s,5/view.s]);
+    ctx.globalAlpha=a; ctx.strokeStyle = id===adminSel || (id===mySq && spillRed && !drag) ? col.ink1 : col.mine; ctx.lineWidth=2/view.s; ctx.setLineDash([6/view.s,5/view.s]);
     ctx.strokeRect(0,0,S,S); ctx.setLineDash([]);
   }
   if(id===mySq && a>0){ // rotate handle
@@ -411,7 +417,7 @@ cv.addEventListener('pointerdown', e=>{
   if(net){ pan={x:e.clientX,y:e.clientY}; return; }
   if(!$('namebox').hidden && document.activeElement!==$('name')) closeName();
   if(adminOn()){ pan={x:e.clientX,y:e.clientY}; cv.classList.add('grabbing'); return; }
-  if(mode!=='move'){
+  if(mode==='draw'){ // in text mode a tap always writes
     const mine = mySq && squares.get(mySq);
     if(!(mine && inside(toLocal(mine,w))) && topWithInkAt(w,true)){ maybe={w, x:e.clientX, y:e.clientY}; return; }
   }
@@ -487,23 +493,37 @@ function openText(sx,sy,l){
   ti.style.fontSize=(20*view.s)+'px'; ti.style.color=col['ink'+ink];
   ti.focus();
 }
+// Fit text inside the square: keep its spot if it fits, else move it in,
+// then use the full width, then shrink the letters. over = it still does not fit.
+const MIN_TEXT = 11, MAX_CHARS = 600;
+function fitText(t, at){
+  const height = (size, x) => { const n=textLines({text:t,size,x}).length; return size*(1.25*n-.25); };
+  let x=Math.max(0,Math.min(S,at.x)), size=at.size;
+  const w=measure(t,size); if(x+w>S) x=Math.max(0,S-w); x=Math.round(x);
+  let h=height(size,x);
+  if(h>S && x>0){ x=0; h=height(size,0); }
+  while(h>S && size>MIN_TEXT){ size--; h=height(size,0); x=0; }
+  const over = h>S || ti.value.length>=MAX_CHARS;
+  return {x, y:Math.round(Math.max(0,Math.min(at.y,S-h))), size, over};
+}
 function commitText(){
-  if(!tiAt) return; const t=ti.value.trim(), at=tiAt; tiAt=null; ti.hidden=true; ti.value='';
+  if(!tiAt) return; let t=ti.value.trim(); const at=tiAt; tiAt=null; ti.hidden=true; ti.value=''; ti.classList.remove('over');
   const q=squares.get(mySq); if(!t||!q) return;
-  const w=measure(t, at.size); let x=Math.max(0,Math.min(S,at.x));
-  if(x+w>S) x=Math.max(0, S-w);
-  x=Math.round(x);
-  const rows=textLines({text:t,size:at.size,x}).length, h=at.size*(1.25*rows-.25);
-  const y=Math.max(0, Math.min(at.y, S-h));
-  const it={t:'tx',id:rid(),ink:at.ink,size:at.size,x,y:Math.round(y),text:t};
+  let f=fitText(t, at);
+  while(f.size===MIN_TEXT && f.y===0 && textLines({text:t,size:f.size,x:f.x}).length*f.size*1.25>S+f.size && t.length>1){ t=t.slice(0,-1); f=fitText(t,at); }
+  const it={t:'tx',id:rid(),ink:at.ink,size:f.size,x:f.x,y:f.y,text:t};
   q.items.push(it); ui(); draw(); send(it).catch(()=>{ q.items=q.items.filter(i=>i!==it); draw(); ui(); });
 }
 ti.addEventListener('keydown',e=>{ if(e.key==='Enter') commitText(); if(e.key==='Escape'){ tiAt=null; ti.hidden=true; } });
 ti.addEventListener('blur',commitText);
 ti.addEventListener('input',()=>{
   if(!tiAt) return;
-  const w=measure(ti.value, tiAt.size);
-  if(w>S || tiAt.y+tiAt.size>S) spill();
+  const t=ti.value.trim(); if(!t){ ti.classList.remove('over'); ti.style.fontSize=(tiAt.size*view.s)+'px'; return; }
+  const f=fitText(t, tiAt);
+  ti.style.fontSize=(f.size*view.s)+'px';
+  ti.classList.toggle('over', f.over);
+  if(f.over) spill(true);
+  else if(f.size<tiAt.size || f.x!==Math.round(Math.max(0,Math.min(S,tiAt.x))) || f.y!==Math.round(tiAt.y)) spill(false);
 });
 
 // ---------- views ----------

@@ -19,7 +19,7 @@ function clean(e) {
       return { t: 'st', id: e.id, ink, w: num(e.w, 1, 14) ?? 3, pts: pts.map(p => Math.round(p * 10) / 10) };
     }
     case 'tx': {
-      const text = typeof e.text === 'string' ? e.text.trim().slice(0, 200) : '';
+      const text = typeof e.text === 'string' ? e.text.trim().slice(0, 600) : '';
       const x = num(e.x, 0, S), y = num(e.y, 0, S);
       if (!sid(e.id) || !text || x == null || y == null) return null;
       return { t: 'tx', id: e.id, ink, size: num(e.size, 10, 60) ?? 20, x: Math.round(x), y: Math.round(y), text };
