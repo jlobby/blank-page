@@ -1,7 +1,7 @@
 import { redis } from '../lib/store.js';
 import { K, dayKey, json, body, ip, owner, limit, append, cleanName, MAX_SQUARES } from '../lib/util.js';
 
-// POST /api/claim {token, x?, y?, name?} -> {day, sq, ev}: a new square where the person touched
+// POST /api/claim {token, x?, y?, name?, re?} -> {day, sq, ev}: a new square where the person touched (re: the one it answers)
 export default async function handler(req, res) {
   if (req.method !== 'POST') return json(res, 405, { error: 'POST only' });
   const b = body(req), me = owner(b.token);
@@ -21,7 +21,8 @@ export default async function handler(req, res) {
     x = Math.round(Math.cos(a) * rad); y = Math.round(Math.sin(a) * rad);
   }
   const name = cleanName(b.name);
-  const ev = await append(day, { t: 'sq', sq, x, y, r: 0, ...(name ? { name } : {}) });
+  const re = typeof b.re === 'string' && /^s[a-z0-9]{1,16}$/.test(b.re) && (await redis.hget(k.own, b.re)) ? b.re : null; // the creation this one answers
+  const ev = await append(day, { t: 'sq', sq, x, y, r: 0, ...(name ? { name } : {}), ...(re ? { re } : {}) });
   if (!ev) return json(res, 507, { error: 'page is full for today' });
   await redis.hset(k.own, { [sq]: me });
   json(res, 200, { day, sq, ev });

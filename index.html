@@ -52,6 +52,7 @@ button.primary{background:var(--mine);color:#fff}
 #tpc{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;padding:0 4px;margin-inline-end:auto}
 #tp.over #tpc{color:var(--ink1)}
 #tpok{background:var(--fg);color:var(--bar)}
+#reply{position:fixed;z-index:15;transform:translate(-50%,0);background:var(--bar);border:1px solid var(--line);border-radius:50%;width:36px;height:36px;min-height:0;padding:0;box-shadow:0 2px 10px rgba(0,0,0,.08)}
 #namebox{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:6px;background:var(--bar);border:1px solid var(--line);border-radius:12px;padding:5px 6px 5px 10px;color:var(--muted);max-width:calc(100% - 32px)}
 #namebox input{font:inherit;font-size:15px;width:12em;max-width:52vw;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--fg);text-align:center;direction:auto}
 #admin{display:flex;gap:4px;align-items:center}
@@ -64,6 +65,7 @@ button.primary{background:var(--mine);color:#fff}
 <div id="hint" hidden aria-label="גע כדי לכתוב"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1-4.5L16 4.5a2.1 2.1 0 013 3L8 18.5 4 20z"/><path d="M14 6.5l3.5 3.5"/></svg></div>
 <div id="clock" class="corner" dir="ltr" title="הדף נמחק בחצות"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10M7 21h10"/><path d="M8 3c0 4 8 5 8 9s-8 5-8 9M16 3c0 4-8 5-8 9"/><path d="M16 21c0-4-8-5-8-9"/></svg><span id="clockt"></span></div>
 <div id="note" class="corner" dir="rtl"></div>
+<button id="reply" class="icon" hidden aria-label="הגב" title="הגב"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 01-11.6 7.1L4 20l1.1-4A8 8 0 1120 12z"/></svg></button>
 <div id="namebox" hidden dir="rtl"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg><input id="name" maxlength="24" autocomplete="nickname" aria-label="השם שלי"><button id="nameok" class="icon" aria-label="שמור" title="שמור"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
 <div id="tp" hidden role="dialog" aria-label="טקסט">
   <textarea id="tpa" maxlength="600" dir="auto" aria-label="טקסט"></textarea>
@@ -139,6 +141,7 @@ function apply(e){
     let q = squares.get(e.sq);
     if(!q){ q={x:e.x,y:e.y,r:e.r,z:e.z,items:[]}; squares.set(e.sq,q); }
     if(e.name) q.name = e.name;
+    if(e.re) q.re = e.re;
     if(!(mine.has(e.sq) && (pendingMove>0 || (drag && drag.sq===e.sq)))){ q.x=e.x; q.y=e.y; q.r=e.r; }
     q.z = Math.max(q.z, e.z);
   } else if(e.t==='del'){
@@ -167,6 +170,7 @@ async function poll(){
       day = d.day; loadMine(); ui();
     }
     for(const e of d.events){ apply(e); lastV=Math.max(lastV,e.v); }
+    if(net && d.events.some(e=>e.t!=='nm')) layoutBubbles();   // new creations and replies join the network right away
     lastV = Math.max(lastV, d.v);
     failures = 0; if($('note').dataset.err) { note(''); delete $('note').dataset.err; }
     draw();
@@ -199,15 +203,16 @@ async function send(ev, sq=mySq){
 const claims = new Map();   // temp id -> promise of the real id
 const alias = new Map();    // temp id -> real id, once the server has made it
 const rs = id => alias.get(id) || id;
-function claimAt(w){ // a new creation around where the person touched, kept fully on screen; drawing starts at once
+function claimAt(w, opt={}){ // a new creation around where the person touched, kept fully on screen; drawing starts at once
   if(mine.size >= MAX_MINE){ note(`הגעת ל-${MAX_MINE} יצירות היום.`); spill(true); return null; }
   const barTop=document.querySelector('.tools').getBoundingClientRect().top;
   const tl=toWorld(0, 40), br=toWorld(innerWidth, barTop-12), h=S/2;
   const fit=(v,a,b)=> b-a>=S ? Math.min(Math.max(v,a+h),b-h) : (a+b)/2;
   const tid = '_'+rid(), first = mine.size===0 && !store.get('bp-named-'+day);
-  const tmp = {x:Math.round(fit(w.x,tl.x,br.x)), y:Math.round(fit(w.y,tl.y,br.y)), r:0, z:Number.MAX_SAFE_INTEGER, items:[], name:myName};
+  const tmp = opt.exact ? {x:Math.round(w.x), y:Math.round(w.y)} : {x:Math.round(fit(w.x,tl.x,br.x)), y:Math.round(fit(w.y,tl.y,br.y))};
+  Object.assign(tmp, {r:0, z:Number.MAX_SAFE_INTEGER, items:[], name:myName}, opt.re ? {re:opt.re} : {});
   squares.set(tid, tmp); mine.add(tid); mySq = tid; ui();
-  const p = post('/api/claim', {x:tmp.x, y:tmp.y, name:myName}).then(d=>{
+  const p = post('/api/claim', {x:tmp.x, y:tmp.y, name:myName, re:opt.re}).then(d=>{
     alias.set(tid, d.sq); squares.delete(tid); mine.delete(tid); squares.set(d.sq, tmp); mine.add(d.sq);
     if(mySq===tid) mySq = d.sq;
     day = d.day; saveMine();
@@ -219,6 +224,30 @@ function claimAt(w){ // a new creation around where the person touched, kept ful
   claims.set(tid, p);
   return tid;
 }
+// ---------- replies ----------
+function freeSpotNear(P){ // next to the creation being answered, where no other creation sits
+  const d=S+40;
+  for(let ring=1; ring<=3; ring++) for(const deg of [0,90,180,270,45,135,225,315]){
+    const a=deg*Math.PI/180, c={x:P.x+Math.cos(a)*d*ring, y:P.y+Math.sin(a)*d*ring};
+    let free=true; for(const q of squares.values()) if(q!==P && Math.hypot(q.x-c.x,q.y-c.y)<S*.85){ free=false; break; }
+    if(free) return c;
+  }
+  return {x:P.x+d, y:P.y};
+}
+function panTo(x, y){ // glide the view so a world point sits mid-screen
+  const barTop=document.querySelector('.tools').getBoundingClientRect().top;
+  const tx=innerWidth/2-x*view.s, ty=barTop/2-y*view.s, sx=view.x, sy=view.y, t0=performance.now();
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  (function step(){ const k=reduce?1:Math.min(1,(performance.now()-t0)/350), e=1-Math.pow(1-k,3);
+    view.x=sx+(tx-sx)*e; view.y=sy+(ty-sy)*e; draw(); if(k<1) requestAnimationFrame(step); })();
+}
+$('reply').onclick = () => {
+  if(!reveal) return; const pid=reveal.sq, P=squares.get(pid); reveal=null; $('reply').hidden=true;
+  if(!P || pid.startsWith('_')) return;
+  const id = claimAt(freeSpotNear(P), {exact:true, re:pid}); if(!id) return;
+  mode='draw'; ui(); const q=squares.get(id); panTo(q.x, q.y);
+  spillUntil = performance.now()+3500; spillRed=false; draw();   // show where to draw
+};
 function myAt(w, margin=0){ // your topmost creation under a point (margin lets a stroke start just outside the edge)
   let best=null;
   for(const id of mine){ const q=squares.get(id); if(!q) continue; const l=toLocal(q,w);
@@ -243,7 +272,7 @@ $('net').onclick = async () => { closePanel(); net=!net; ui(); if(net){ await lo
 function fitBubbles(){
   if(!bubbles.length) return;
   let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
-  for(const b of bubbles){ x0=Math.min(x0,b.x-b.R); y0=Math.min(y0,b.y-b.R); x1=Math.max(x1,b.x+b.R); y1=Math.max(y1,b.y+b.R+30); }
+  for(const b of bubbles){ x0=Math.min(x0,b.tx-b.R); y0=Math.min(y0,b.ty-b.R); x1=Math.max(x1,b.tx+b.R); y1=Math.max(y1,b.ty+b.R+30); }
   const s=Math.min(2, Math.max(.05, Math.min(innerWidth*.9/(x1-x0), (innerHeight-140)/(y1-y0))));
   view={s, x:innerWidth/2-(x0+x1)/2*s, y:(innerHeight-70)/2-(y0+y1)/2*s};
 }
@@ -324,11 +353,14 @@ function inkBottom(q){ // lowest point of the drawing, in the square's own coord
 }
 function paintReveal(){
   if(!reveal) return; const left = reveal.until - performance.now(), q = squares.get(reveal.sq);
-  if(left<=0 || !q || !q.name){ reveal=null; return; }
+  if(left<=0 || !q){ reveal=null; return; }
   const p = fromLocal(q, inkBottom(q));
   ctx.save(); ctx.globalAlpha = Math.min(1, left/500);
   ctx.fillStyle=col.muted; ctx.font=`${12/view.s}px ${getComputedStyle(document.body).fontFamily}`; ctx.textAlign='center'; ctx.textBaseline='top';
-  ctx.fillText(q.name, p.x, p.y); ctx.restore(); draw();
+  if(q.name) ctx.fillText(q.name, p.x, p.y); ctx.restore();
+  const sp = toScreen(p.x, p.y), rb = $('reply');           // reply button just under the name
+  rb.style.left = sp.x+'px'; rb.style.top = (sp.y + (q.name ? 22 : 4))+'px'; rb.style.opacity = Math.min(1, left/500);
+  rb.hidden = false; draw();
 }
 function edgeAlpha(){ const left = spillUntil - performance.now(); if(left<=0) return 0; draw(); return Math.min(1, left/600); }
 let spillRed = false;
@@ -411,27 +443,49 @@ function layoutBubbles(){
   const prev=new Map(bubbles.map(b=>[b.id,b]));
   bubbles = ids.map((id,i)=>{ const q=squares.get(id), n=counts[id]||0, p=prev.get(id);
     const R = max ? Math.max(R_DOT, R_MAX*Math.sqrt(n/max)) : 70;           // no views anywhere yet: all the same
-    return {i, id, n, R, x:p?p.x:q.x, y:p?p.y:q.y, top: n>0 && n===max}; });
+    return {i, id, n, R, re:q.re, x:p?p.x:q.x, y:p?p.y:q.y, tx:p?p.tx:q.x, ty:p?p.ty:q.y, top: n>0 && n===max}; });
+  // the layout works on targets (tx,ty); the circles then glide there
+  const byId=new Map(bubbles.map(b=>[b.id,b])), links=bubbles.filter(b=>b.re && byId.has(b.re)).map(b=>[b, byId.get(b.re)]);
   // push overlapping circles apart; a grid keeps this fast with many circles
   const cell = 2*Math.max(70, ...bubbles.map(b=>b.R)) + GAP;
-  for(let it=0; it<40; it++){
+  const settled = bubbles.length && bubbles.every(b=>prev.has(b.id));   // later refreshes start from a finished layout
+  for(let it=0, n=settled?40:200; it<n; it++){
     const grid=new Map(), key=(x,y)=>Math.floor(x/cell)+','+Math.floor(y/cell);
-    for(const b of bubbles){ const k=key(b.x,b.y); (grid.get(k)||grid.set(k,[]).get(k)).push(b); }
+    for(const b of bubbles){ const k=key(b.tx,b.ty); (grid.get(k)||grid.set(k,[]).get(k)).push(b); }
     let moved=false;
+    for(const [a,b] of links){ // a reply is pulled toward what it answers
+      let dx=b.tx-a.tx, dy=b.ty-a.ty, d=Math.hypot(dx,dy)||.01; const want=a.R+b.R+GAP+120;   // leave room to see the link
+      { const k=(d-want)/d*.25; dx*=k; dy*=k; a.tx+=dx; a.ty+=dy; b.tx-=dx; b.ty-=dy; if(Math.abs(d-want)>1) moved=true; }   // linked circles keep a set distance
+    }
     for(const a of bubbles){
-      const cx=Math.floor(a.x/cell), cy=Math.floor(a.y/cell);
+      const cx=Math.floor(a.tx/cell), cy=Math.floor(a.ty/cell);
       for(let gx=cx-1;gx<=cx+1;gx++) for(let gy=cy-1;gy<=cy+1;gy++) for(const b of grid.get(gx+','+gy)||[]){
         if(b.i<=a.i) continue;
-        let dx=b.x-a.x, dy=b.y-a.y, d=Math.hypot(dx,dy)||.01; const m=a.R+b.R+GAP;
-        if(d<m){ const k=(m-d)/2/d; dx*=k; dy*=k; a.x-=dx; a.y-=dy; b.x+=dx; b.y+=dy; moved=true; }
+        let dx=b.tx-a.tx, dy=b.ty-a.ty, d=Math.hypot(dx,dy)||.01; const m=a.R+b.R+GAP;
+        if(d<m){ const k=(m-d)/2/d; dx*=k; dy*=k; a.tx-=dx; a.ty-=dy; b.tx+=dx; b.ty+=dy; moved=true; }
       }
     }
     if(!moved) break;
   }
 }
+const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 function paintBubbles(){
   ctx.textAlign='center'; ctx.textBaseline='top';
-  const tl=toWorld(0,0), br=toWorld(innerWidth,innerHeight);
+  const tl=toWorld(0,0), br=toWorld(innerWidth,innerHeight), still=reduceMotion();
+  let moving=false;
+  for(const b of bubbles){ // glide toward the layout
+    if(still){ b.x=b.tx; b.y=b.ty; continue; }
+    b.x+=(b.tx-b.x)*.12; b.y+=(b.ty-b.y)*.12; if(Math.abs(b.tx-b.x)+Math.abs(b.ty-b.y)>.5) moving=true;
+  }
+  // links between a reply and what it answers, with ink slowly flowing toward the original
+  const byId=new Map(bubbles.map(b=>[b.id,b])), u=1/view.s; let anyLink=false;
+  ctx.save(); ctx.strokeStyle=col.muted; ctx.lineWidth=1.5*u; ctx.setLineDash([6*u,6*u]);
+  ctx.lineDashOffset = still ? 0 : -(performance.now()/60)%12*u;
+  for(const b of bubbles){ const a=b.re && byId.get(b.re); if(!a) continue; anyLink=true;
+    const dx=a.x-b.x, dy=a.y-b.y, d=Math.hypot(dx,dy)||1;
+    ctx.beginPath(); ctx.moveTo(b.x+dx/d*b.R, b.y+dy/d*b.R); ctx.lineTo(a.x-dx/d*a.R, a.y-dy/d*a.R); ctx.stroke(); }
+  ctx.restore();
+  if(moving || (anyLink && !still)) draw();
   for(const b of bubbles){
     const q=squares.get(b.id); if(!q) continue;
     if(b.x+b.R<tl.x || b.x-b.R>br.x || b.y+b.R<tl.y || b.y-b.R-40>br.y) continue;   // off screen
@@ -461,6 +515,7 @@ function render(){
     });
     paintReveal();
   }
+  if(net || !reveal) $('reply').hidden = true;
   $('hint').hidden = squares.size>0 || day===null;
 }
 
@@ -530,7 +585,7 @@ function end(e){
   if(pinch){ if(ptrs.size<2) pinch=null; return; }
   const wasTap = tap && Math.hypot(e.clientX-tap.x,e.clientY-tap.y)<6; tap=null;
   if(adminOn() && !net){ pan=null; if(wasTap) adminPick(toWorld(e.clientX,e.clientY)); return; }
-  if(maybe){ const t=topWithInkAt(maybe.w,true); maybe=null; if(t){ reveal={sq:t[0], until:performance.now()+4000}; draw(); return; } }
+  if(maybe){ const t=topWithInkAt(maybe.w,true); maybe=null; if(t){ reveal={sq:t[0], until:performance.now()+6000}; draw(); return; } }
   if(drag){ const sq=rs(drag.sq), q=squares.get(sq); drag=null; spill(); if(q){ pendingMove++; send({t:'sq',x:q.x,y:q.y,r:q.r}, sq).finally(()=>pendingMove--); } return; }
   if(localStroke){ const {sq:sq0, ...st}=localStroke, sq=rs(sq0), q=squares.get(sq); localStroke=null;
     if(q){ q.items.push(st); q.z=Number.MAX_SAFE_INTEGER; ui(); draw();
@@ -540,7 +595,7 @@ function end(e){
   if(wasTap && net){ const w=toWorld(e.clientX,e.clientY); const b=bubbles.find(b=>Math.hypot(b.x-w.x,b.y-w.y)<Math.max(b.R, 22/view.s));
     if(b && selBubble===b.id){ net=false; selBubble=null; ui(); flyTo(b.id); }
     else { selBubble = b ? b.id : null; draw(); } }
-  else if(wasTap && mode==='move'){ const t=topWithInkAt(toWorld(e.clientX,e.clientY),false); if(t){ reveal={sq:t[0], until:performance.now()+4000}; draw(); } }
+  else if(wasTap && mode==='move'){ const t=topWithInkAt(toWorld(e.clientX,e.clientY),false); if(t){ reveal={sq:t[0], until:performance.now()+6000}; draw(); } }
 }
 cv.addEventListener('pointerup', end);
 cv.addEventListener('pointercancel', e=>{ ptrs.delete(e.pointerId); pinch=pan=maybe=null; localStroke=null; if(drag){drag=null;} draw(); });
@@ -671,7 +726,7 @@ function adminPick(w){
       else if(l.x>=m.x-4 && l.x<=m.x+m.text.length*m.size*.6 && l.y>=m.y-4 && l.y<=m.y+m.size+4) d=0;
       if(d<best){ best=d; adminItem=m.id; }
     }
-    reveal = {sq:t[0], until:performance.now()+4000};
+    reveal = {sq:t[0], until:performance.now()+6000};
   }
   adminUi(); draw();
 }
