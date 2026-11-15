@@ -91,10 +91,12 @@ let token = store.get('bp-token');
 if(!token){ const a=new Uint8Array(18); crypto.getRandomValues(a); token=btoa(String.fromCharCode(...a)).replace(/[+/=]/g,c=>({'+':'-','/':'_','=':''}[c])); store.set('bp-token',token); }
 const rid = () => Math.random().toString(36).slice(2,10);
 const pick = a => a[Math.floor(Math.random()*a.length)];
-const randomName = () => pick(['ינשוף','שועל','דולפין','צב','קיפוד','זברה','נמר','לוטרה','פינגווין','תמנון','סנאי','לוויתן'])+' '+
-  pick(['שקט','כחול','ישנוני','מהיר','סקרן','עליז','רגוע','נועז','ביישן','חולמני','זריז','מנומס']);
+const randomName = () => pick(['Quiet','Blue','Sleepy','Swift','Curious','Cheerful','Calm','Bold','Shy','Dreamy','Nimble','Polite'])+' '+
+  pick(['Owl','Fox','Dolphin','Turtle','Hedgehog','Zebra','Tiger','Otter','Penguin','Octopus','Squirrel','Whale']);
+// names the page picked in Hebrew before switching to English; a name someone typed themselves is kept
+const oldAuto = /^(ינשוף|שועל|דולפין|צב|קיפוד|זברה|נמר|לוטרה|פינגווין|תמנון|סנאי|לוויתן) (שקט|כחול|ישנוני|מהיר|סקרן|עליז|רגוע|נועז|ביישן|חולמני|זריז|מנומס)$/;
 let myName = store.get('bp-name');
-if(!myName){ myName = randomName(); store.set('bp-name', myName); }
+if(!myName || oldAuto.test(myName)){ myName = randomName(); store.set('bp-name', myName); }
 
 // ---------- state ----------
 let day = null, lastV = 0;
