@@ -282,7 +282,7 @@ function inkBottom(q){ // lowest point of the drawing, in the square's own coord
   let x0=S, x1=0, y1=0;
   for(const m of q.items){
     if(m.t==='st'){ for(let i=0;i<m.pts.length;i+=2){ x0=Math.min(x0,m.pts[i]); x1=Math.max(x1,m.pts[i]); y1=Math.max(y1,m.pts[i+1]); } }
-    else { x0=Math.min(x0,m.x); x1=Math.max(x1,m.x+m.text.length*m.size*.55); y1=Math.max(y1,m.y+m.size); }
+    else { const n=textLines(m).length; x0=Math.min(x0,m.x); x1=Math.max(x1,Math.min(S,m.x+measure(m.text,m.size))); y1=Math.max(y1,m.y+m.size*(1.25*n-.25)); }
   }
   return {x:Math.max(0,Math.min(S,(x0+x1)/2)), y:Math.min(S,y1)+14/view.s};
 }
@@ -297,6 +297,23 @@ function paintReveal(){
 function edgeAlpha(){ const left = spillUntil - performance.now(); if(left<=0) return 0; draw(); return Math.min(1, left/600); }
 function spill(){ spillUntil = performance.now() + 1800; draw(); }
 
+let uiFont = null;
+const fontFor = size => `${size}px ${uiFont || (uiFont = getComputedStyle(document.body).fontFamily)}`;
+const isRtl = t => /^[^A-Za-z\u0590-\u05FF\u0600-\u06FF]*[\u0590-\u05FF\u0600-\u06FF]/.test(t);
+function measure(text, size){ ctx.save(); ctx.font=fontFor(size); const w=ctx.measureText(text).width; ctx.restore(); return w; }
+function textLines(m){ // wrap to the room left in the square, so nothing is cut at the edge
+  if(m._lines) return m._lines;
+  const size=m.size||20, max=Math.max(size*2, S-m.x), out=[]; let line='';
+  for(const word of m.text.split(' ')){
+    const next = line ? line+' '+word : word;
+    if(measure(next,size)<=max){ line=next; continue; }
+    if(line) out.push(line);
+    line='';
+    for(const ch of word){ if(measure(line+ch,size)>max && line){ out.push(line); line=ch; } else line+=ch; }
+  }
+  if(line) out.push(line);
+  return (m._lines = out);
+}
 function paintItems(q, over, extra){
   ctx.lineCap='round'; ctx.lineJoin='round';
   const list = !over && localStroke && q===squares.get(mySq) ? q.items.concat([localStroke]) : q.items;
@@ -309,8 +326,10 @@ function paintItems(q, over, extra){
       for(let i=2;i<p.length-2;i+=2) ctx.quadraticCurveTo(p[i],p[i+1],(p[i]+p[i+2])/2,(p[i+1]+p[i+3])/2);
       ctx.lineTo(p[p.length-2],p[p.length-1]); ctx.stroke();
     } else if(m.t==='tx'){
-      ctx.fillStyle=c; ctx.font=`${m.size||20}px ${getComputedStyle(document.body).fontFamily}`; ctx.textBaseline='top';
-      ctx.fillText(m.text, m.x, m.y);
+      ctx.fillStyle=c; ctx.font=fontFor(m.size||20); ctx.textBaseline='top'; ctx.textAlign='left';
+      ctx.direction = isRtl(m.text) ? 'rtl' : 'ltr';
+      textLines(m).forEach((ln,i)=>ctx.fillText(ln, m.x, m.y + i*(m.size||20)*1.25));
+      ctx.direction='ltr';
     }
   }
 }
@@ -471,16 +490,20 @@ function openText(sx,sy,l){
 function commitText(){
   if(!tiAt) return; const t=ti.value.trim(), at=tiAt; tiAt=null; ti.hidden=true; ti.value='';
   const q=squares.get(mySq); if(!t||!q) return;
-  const it={t:'tx',id:rid(),ink:at.ink,size:at.size,x:Math.round(Math.max(0,Math.min(S,at.x))),y:Math.round(Math.max(0,Math.min(S,at.y))),text:t};
+  const w=measure(t, at.size); let x=Math.max(0,Math.min(S,at.x));
+  if(x+w>S) x=Math.max(0, S-w);
+  x=Math.round(x);
+  const rows=textLines({text:t,size:at.size,x}).length, h=at.size*(1.25*rows-.25);
+  const y=Math.max(0, Math.min(at.y, S-h));
+  const it={t:'tx',id:rid(),ink:at.ink,size:at.size,x,y:Math.round(y),text:t};
   q.items.push(it); ui(); draw(); send(it).catch(()=>{ q.items=q.items.filter(i=>i!==it); draw(); ui(); });
 }
 ti.addEventListener('keydown',e=>{ if(e.key==='Enter') commitText(); if(e.key==='Escape'){ tiAt=null; ti.hidden=true; } });
 ti.addEventListener('blur',commitText);
 ti.addEventListener('input',()=>{
   if(!tiAt) return;
-  ctx.save(); ctx.font=`${tiAt.size}px ${getComputedStyle(document.body).fontFamily}`;
-  const w=ctx.measureText(ti.value).width; ctx.restore();
-  if(tiAt.x+w>S || tiAt.y+tiAt.size>S) spill();
+  const w=measure(ti.value, tiAt.size);
+  if(w>S || tiAt.y+tiAt.size>S) spill();
 });
 
 // ---------- views ----------
