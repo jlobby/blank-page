@@ -317,7 +317,7 @@ function paintSquare(id, q){
   ctx.save(); ctx.beginPath(); ctx.rect(0,0,S,S); ctx.clip(); paintItems(q);
   if(id===adminSel && adminItem){ const m=q.items.find(i=>i.id===adminItem); if(m) paintItems({items:[m]}, col.ink1, 4/view.s); }
   ctx.restore();
-  const a = id===adminSel ? 1 : id===mySq ? (mode==='move' ? 1 : edgeAlpha()) : 0;
+  const a = id===adminSel ? 1 : id===mySq ? (drag ? 1 : edgeAlpha()) : 0;
   if(a>0){
     ctx.globalAlpha=a; ctx.strokeStyle = id===adminSel ? col.ink1 : col.mine; ctx.lineWidth=2/view.s; ctx.setLineDash([6/view.s,5/view.s]);
     ctx.strokeRect(0,0,S,S); ctx.setLineDash([]);
@@ -400,7 +400,7 @@ function startAt(e, w){
   if(!q && mode!=='move' && day){ q = claimAt(w); }
   if(q){
     const h=toScreen(...Object.values(rotHandle(q)));
-    if((mode==='move'||edgeAlpha()>0) && Math.hypot(h.x-e.clientX,h.y-e.clientY)<22){ drag={kind:'rot', a0:Math.atan2(w.y-q.y,w.x-q.x)-q.r}; return; }
+    if(edgeAlpha()>0 && Math.hypot(h.x-e.clientX,h.y-e.clientY)<22){ drag={kind:'rot', a0:Math.atan2(w.y-q.y,w.x-q.x)-q.r}; return; }
     const l=toLocal(q,w);
     if(mode==='move' && inside(l)){ drag={kind:'move', dx:w.x-q.x, dy:w.y-q.y}; cv.classList.add('grabbing'); return; }
     if(mode==='draw'){ if(!inside(l)) spill(); localStroke={t:'st',id:rid(),ink,w:Math.max(1.5,Math.min(8,3/view.s)),pts:[r1(cl(l.x)),r1(cl(l.y))]}; draw(); return; }
@@ -434,7 +434,7 @@ function end(e){
   const wasTap = tap && Math.hypot(e.clientX-tap.x,e.clientY-tap.y)<6; tap=null;
   if(adminOn() && !net){ pan=null; if(wasTap) adminPick(toWorld(e.clientX,e.clientY)); return; }
   if(maybe){ const t=topWithInkAt(maybe.w,true); maybe=null; if(t){ reveal={sq:t[0], until:performance.now()+4000}; draw(); return; } }
-  if(drag){ const q=squares.get(mySq); drag=null; if(q){ pendingMove++; send({t:'sq',x:q.x,y:q.y,r:q.r}).finally(()=>pendingMove--); } return; }
+  if(drag){ const q=squares.get(mySq); drag=null; spill(); if(q){ pendingMove++; send({t:'sq',x:q.x,y:q.y,r:q.r}).finally(()=>pendingMove--); } return; }
   if(localStroke){ const s=localStroke, q=squares.get(mySq); localStroke=null;
     if(q){ q.items.push(s); q.z=Number.MAX_SAFE_INTEGER; ui(); draw();
       send(s).catch(()=>{ q.items=q.items.filter(i=>i!==s); draw(); ui(); }); }
@@ -473,6 +473,12 @@ function commitText(){
 }
 ti.addEventListener('keydown',e=>{ if(e.key==='Enter') commitText(); if(e.key==='Escape'){ tiAt=null; ti.hidden=true; } });
 ti.addEventListener('blur',commitText);
+ti.addEventListener('input',()=>{
+  if(!tiAt) return;
+  ctx.save(); ctx.font=`${tiAt.size}px ${getComputedStyle(document.body).fontFamily}`;
+  const w=ctx.measureText(ti.value).width; ctx.restore();
+  if(tiAt.x+w>S || tiAt.y+tiAt.size>S) spill();
+});
 
 // ---------- views ----------
 const seenTime = {}; let queue = [];
