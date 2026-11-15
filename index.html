@@ -55,7 +55,6 @@ button.primary{background:var(--mine);color:#fff}
 <input id="ti" hidden maxlength="200" autocomplete="off" aria-label="טקסט">
 
 <div id="bar"><div class="tools" role="toolbar">
-  <button id="claim" hidden>הריבוע שלי</button>
   <button id="m-draw" aria-pressed="true">עט</button>
   <button id="m-text" aria-pressed="false">טקסט</button>
   <button id="m-move" aria-pressed="false">הזזה</button>
@@ -161,7 +160,6 @@ async function send(ev){
 }
 
 // ---------- claiming ----------
-$('claim').onclick = () => { if(mySq) flyTo(mySq); };
 let claimP = null;
 function claimAt(w){ // square centered where the person first touched; drawing starts at once
   const tmp = {x:Math.round(w.x), y:Math.round(w.y), r:0, z:Number.MAX_SAFE_INTEGER, items:[]};
@@ -205,7 +203,6 @@ $('undo').onclick = () => {
 };
 function ui(){
   const has = !!mySq;
-  $('claim').hidden = !has || net;
   for(const m of ['draw','text','move']){ $('m-'+m).hidden=net; $('m-'+m).setAttribute('aria-pressed', mode===m); }
   $('inks').hidden = net; document.querySelectorAll('.mineonly').forEach(e=>e.hidden=!has||net);
   const q = squares.get(mySq); $('undo').disabled = !q || !q.items.length;
