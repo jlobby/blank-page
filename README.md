@@ -6,5 +6,5 @@
 - `index.html` – כל הדף
 - `api/` – פונקציות Vercel (events, claim, act, view, views, admin)
 - אחסון: Upstash Redis (דרך Vercel Marketplace). מפתחות של כל יום פגים אחרי 48 שעות.
-- מנהל: פותחים `/#admin` ומתחברים עם Google. משתני סביבה ב-Vercel: `GOOGLE_CLIENT_ID` ו-`ADMIN_EMAIL` (המייל נשמר רק שם, לא בקוד).
+- מנהל: פותחים `/admin`. כניסה בסיסמה (`ADMIN_PASSWORD` ב-Vercel, לפחות 8 תווים) או עם Google (`GOOGLE_CLIENT_ID` + `ADMIN_EMAIL`). הסיסמה והמייל נשמרים רק שם, לא בקוד.
 - פיתוח מקומי: `npm run dev` (אחסון בזיכרון).

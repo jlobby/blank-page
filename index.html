@@ -72,6 +72,8 @@ button.primary{background:var(--mine);color:#fff}
 #namebox input{font:inherit;font-size:15px;width:12em;max-width:52vw;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--fg);text-align:center;direction:auto}
 #admin{display:flex;gap:4px;align-items:center}
 #gbtn{display:grid;place-items:center;min-width:36px;min-height:34px}
+#apw{display:flex;align-items:center;gap:2px;margin:0}
+#apwi{font:inherit;width:120px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--fg)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -100,7 +102,7 @@ button.primary{background:var(--mine);color:#fff}
   <span class="sep"></span>
   <button id="me" class="icon" aria-label="השם שלי" title="השם שלי" aria-pressed="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg></button>
   <button id="net" class="icon" aria-pressed="false" aria-label="רשת" title="רשת"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="10" r="5.5"/><circle cx="17.5" cy="16.5" r="3"/><circle cx="17" cy="5.5" r="2"/></svg></button>
-  <span id="admin" hidden><span class="sep"></span><span id="gbtn" title="כניסת מנהל"></span><span id="atools" hidden style="display:contents"><span id="ashield" class="icon" title="מצב מנהל" style="color:var(--ink1);display:grid;place-items:center;padding:0 4px"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.3-3 7.7-7 9.5-4-1.8-7-5.2-7-9.5V6z"/></svg></span><button id="aitem" class="icon" disabled aria-label="מחק קו" title="מחק קו"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 20H20"/><path d="M4.6 14.6l8.9-8.9a2 2 0 012.8 0l2.5 2.5a2 2 0 010 2.8L11 19.8a1 1 0 01-.7.2H7.9a1 1 0 01-.7-.3l-2.6-2.6a1.8 1.8 0 010-2.5z"/><path d="M9.5 9.7l5 5"/></svg></button><button id="adel" class="icon" disabled aria-label="מחק ציור" title="מחק ציור"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M8 8l8 8M16 8l-8 8"/></svg></button><button id="aout" class="icon" aria-label="יציאה" title="יציאה"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h4a2 2 0 012 2v12a2 2 0 01-2 2h-4"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg></button></span></span>
+  <span id="admin" hidden><span class="sep"></span><span id="gbtn" title="כניסת מנהל" hidden></span><form id="apw" hidden><input id="apwi" type="password" autocomplete="current-password" placeholder="••••••••" aria-label="סיסמת מנהל"><button id="apwb" class="icon" type="submit" aria-label="כניסה" title="כניסה"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg></button></form><span id="atools" hidden style="display:contents"><span id="ashield" class="icon" title="מצב מנהל" style="color:var(--ink1);display:grid;place-items:center;padding:0 4px"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.3-3 7.7-7 9.5-4-1.8-7-5.2-7-9.5V6z"/></svg></span><button id="aitem" class="icon" disabled aria-label="מחק קו" title="מחק קו"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 20H20"/><path d="M4.6 14.6l8.9-8.9a2 2 0 012.8 0l2.5 2.5a2 2 0 010 2.8L11 19.8a1 1 0 01-.7.2H7.9a1 1 0 01-.7-.3l-2.6-2.6a1.8 1.8 0 010-2.5z"/><path d="M9.5 9.7l5 5"/></svg></button><button id="adel" class="icon" disabled aria-label="מחק ציור" title="מחק ציור"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M8 8l8 8M16 8l-8 8"/></svg></button><button id="aout" class="icon" aria-label="יציאה" title="יציאה"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h4a2 2 0 012 2v12a2 2 0 01-2 2h-4"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg></button></span></span>
 </div></div>
 
 <script>
@@ -715,16 +717,18 @@ const admin = location.hash==='#admin' || location.pathname.replace(/\/$/,'')===
 let adminSession = null, adminItem = null;
 try{ adminSession = sessionStorage.getItem('bp-admin'); }catch{}
 const adminOn = () => admin && !!adminSession;
+let adminMethods = {google:false, password:false};
 function adminUi(){
   $('admin').hidden = !admin;
-  $('atools').hidden = !adminOn(); $('gbtn').hidden = adminOn();
+  $('atools').hidden = !adminOn(); $('gbtn').hidden = adminOn() || !adminMethods.google; $('apw').hidden = adminOn() || !adminMethods.password;
   $('adel').disabled = !adminSel; $('aitem').disabled = !adminItem;
 }
-async function adminLogin(credential){
+async function adminLogin(credential, password){
   try{
-    const r = await fetch('/api/admin-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({credential})});
+    const r = await fetch('/api/admin-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(password!=null ? {password} : {credential})});
     const d = await r.json().catch(()=>({}));
-    if(!r.ok){ note(r.status===403 ? 'החשבון הזה אינו מנהל' : 'הכניסה נכשלה'); return; }
+    if(!r.ok){ note(r.status===403 ? (password!=null ? 'סיסמה שגויה' : 'החשבון הזה אינו מנהל') : r.status===429 ? 'יותר מדי ניסיונות. נסה שוב בעוד כמה דקות.' : 'הכניסה נכשלה'); return; }
+    $('apwi').value='';
     adminSession = d.session; try{ sessionStorage.setItem('bp-admin', adminSession); }catch{}
     note(''); adminUi(); draw();
   }catch{ note('הכניסה נכשלה'); }
@@ -760,8 +764,11 @@ if(admin){
   $('aitem').onclick = () => adminDelete(true);
   $('aout').onclick = adminLogout;
   if(location.hostname==='localhost') window.bpAdminLogin = adminLogin;
+  $('apw').addEventListener('submit', e=>{ e.preventDefault(); const v=$('apwi').value; if(v) adminLogin(null, v); });
   fetch('/api/config').then(r=>r.json()).then(c=>{
-    if(!c.googleClientId){ if(!adminOn()) note('כניסת מנהל עוד לא הוגדרה'); return; }
+    adminMethods = {google: !!c.googleClientId, password: !!c.password}; adminUi();
+    if(!adminOn() && adminMethods.password) $('apwi').focus();
+    if(!c.googleClientId){ if(!adminOn() && !c.password) note('כניסת מנהל עוד לא הוגדרה'); return; }
     const g=document.createElement('script'); g.src='https://accounts.google.com/gsi/client'; g.async=true;
     g.onload=()=>{ google.accounts.id.initialize({client_id:c.googleClientId, callback:r=>adminLogin(r.credential)});
       google.accounts.id.renderButton($('gbtn'),{type:'icon',shape:'circle',theme:'outline',size:'medium'}); };
