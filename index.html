@@ -67,7 +67,8 @@ button.primary{background:var(--mine);color:#fff}
 .dot[aria-pressed="true"]{background:none;border-color:var(--fg)}
 #inks{display:flex;gap:0}
 .corner{position:fixed;top:calc(12px + env(safe-area-inset-top));color:var(--muted);font-size:12px;pointer-events:none;font-variant-numeric:tabular-nums}
-#clock{right:max(16px,env(safe-area-inset-right));display:flex;align-items:center;gap:5px}
+#clock{right:max(16px,env(safe-area-inset-right));display:flex;align-items:center;gap:14px}
+#here{display:flex;align-items:center;gap:4px}
 #note{left:max(16px,env(safe-area-inset-left));max-width:55vw;text-align:left}
 #hint{position:fixed;inset:0;display:grid;place-items:center;color:var(--muted);opacity:.6;pointer-events:none}
 #tp{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(520px,calc(100% - 32px));background:var(--bar);border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px;box-shadow:0 8px 30px rgba(0,0,0,.12);z-index:20}
@@ -78,7 +79,8 @@ button.primary{background:var(--mine);color:#fff}
 #tpc{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;padding:0 4px;margin-inline-end:auto}
 #tp.over #tpc{color:var(--ink1)}
 #tpok{background:var(--fg);color:var(--bar)}
-#reply{position:fixed;z-index:15;transform:translate(-50%,0);background:var(--bar);border:1px solid var(--line);border-radius:50%;width:36px;height:36px;min-height:0;padding:0;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+#rev{position:fixed;z-index:15;transform:translate(-50%,0);display:flex;gap:6px}
+#rev button{background:var(--bar);border:1px solid var(--line);border-radius:50%;width:36px;height:36px;min-height:0;min-width:0;padding:0;box-shadow:0 2px 10px rgba(0,0,0,.08)}
 #namebox{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:6px;background:var(--bar);border:1px solid var(--line);border-radius:12px;padding:5px 6px 5px 10px;color:var(--muted);max-width:calc(100% - 32px)}
 #namebox input{font:inherit;font-size:15px;width:12em;max-width:52vw;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--fg);text-align:center;direction:auto}
 #admin{display:flex;gap:4px;align-items:center}
@@ -91,9 +93,9 @@ button.primary{background:var(--mine);color:#fff}
 <body>
 <canvas id="c" aria-label="הדף המשותף"></canvas>
 <div id="hint" hidden aria-label="גע כדי לכתוב"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1-4.5L16 4.5a2.1 2.1 0 013 3L8 18.5 4 20z"/><path d="M14 6.5l3.5 3.5"/></svg></div>
-<div id="clock" class="corner" dir="ltr" title="הדף נמחק בחצות"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10M7 21h10"/><path d="M8 3c0 4 8 5 8 9s-8 5-8 9M16 3c0 4-8 5-8 9"/><path d="M16 21c0-4-8-5-8-9"/></svg><span id="clockt"></span></div>
+<div id="clock" class="corner" dir="ltr"><span id="here" title="כמה אנשים פה עכשיו" hidden><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.3 3-5 6-5s5.4 1.7 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.2c2.4.2 4 1.7 4.5 4.8"/></svg><span id="heren"></span></span><span title="הדף נמחק בחצות" style="display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10M7 21h10"/><path d="M8 3c0 4 8 5 8 9s-8 5-8 9M16 3c0 4-8 5-8 9"/><path d="M16 21c0-4-8-5-8-9"/></svg><span id="clockt"></span></span></div>
 <div id="note" class="corner" dir="rtl"></div>
-<button id="reply" class="icon" hidden aria-label="הגב" title="הגב"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 01-11.6 7.1L4 20l1.1-4A8 8 0 1120 12z"/></svg></button>
+<div id="rev" hidden><button id="reply" class="icon" aria-label="הגב" title="הגב"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 01-11.6 7.1L4 20l1.1-4A8 8 0 1120 12z"/></svg></button><button id="share" class="icon" aria-label="שתף" title="שתף"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg></button></div>
 <div id="namebox" hidden dir="rtl"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg><input id="name" maxlength="24" autocomplete="nickname" aria-label="השם שלי"><button id="nameok" class="icon" aria-label="שמור" title="שמור"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
 <div id="tp" hidden role="dialog" aria-label="טקסט">
   <textarea id="tpa" maxlength="600" dir="auto" aria-label="טקסט"></textarea>
@@ -270,7 +272,7 @@ function panTo(x, y){ // glide the view so a world point sits mid-screen
     view.x=sx+(tx-sx)*e; view.y=sy+(ty-sy)*e; draw(); if(k<1) requestAnimationFrame(step); })();
 }
 $('reply').onclick = () => {
-  if(!reveal) return; const pid=reveal.sq, P=squares.get(pid); reveal=null; $('reply').hidden=true;
+  if(!reveal) return; const pid=reveal.sq, P=squares.get(pid); reveal=null; $('rev').hidden=true;
   if(!P || pid.startsWith('_')) return;
   const id = claimAt(freeSpotNear(P), {exact:true, re:pid}); if(!id) return;
   mode='draw'; ui(); const q=squares.get(id); panTo(q.x, q.y);
@@ -386,7 +388,7 @@ function paintReveal(){
   ctx.save(); ctx.globalAlpha = Math.min(1, left/500);
   ctx.fillStyle=col.muted; ctx.font=`${12/view.s}px ${getComputedStyle(document.body).fontFamily}`; ctx.textAlign='center'; ctx.textBaseline='top';
   if(q.name) ctx.fillText(q.name, p.x, p.y); ctx.restore();
-  const sp = toScreen(p.x, p.y), rb = $('reply');           // reply button just under the name
+  const sp = toScreen(p.x, p.y), rb = $('rev');             // reply and share, just under the name
   rb.style.left = sp.x+'px'; rb.style.top = (sp.y + (q.name ? 22 : 4))+'px'; rb.style.opacity = Math.min(1, left/500);
   rb.hidden = false; draw();
 }
@@ -443,7 +445,13 @@ function paintItems(q, over, extra){
 function paintSquare(id, q){
   ctx.save();
   ctx.translate(q.x,q.y); ctx.rotate(q.r); ctx.translate(-S/2,-S/2);
-  ctx.save(); ctx.beginPath(); ctx.rect(0,0,S,S); ctx.clip(); paintItems(q);
+  ctx.save(); ctx.beginPath(); ctx.rect(0,0,S,S); ctx.clip();
+  const lift = hoverLift(id);
+  if(lift){ // under the mouse: the ink rises a little, with a soft shadow
+    ctx.translate(0, -2*lift/view.s);
+    ctx.shadowColor = `rgba(0,0,0,${.22*lift})`; ctx.shadowBlur = 6*lift/view.s; ctx.shadowOffsetY = 2*lift/view.s;
+  }
+  paintItems(q); ctx.shadowColor='transparent';
   if(id===adminSel && adminItem){ const m=q.items.find(i=>i.id===adminItem); if(m) paintItems({items:[m]}, col.ink1, 4/view.s); }
   ctx.restore();
   const a = id===adminSel ? 1 : id===mySq ? (drag ? 1 : edgeAlpha()) : 0;
@@ -543,7 +551,7 @@ function render(){
     });
     paintReveal();
   }
-  if(net || !reveal) $('reply').hidden = true;
+  if(net || !reveal) $('rev').hidden = true;
   $('hint').hidden = squares.size>0 || day===null;
 }
 
@@ -626,6 +634,25 @@ function end(e){
   else if(wasTap && mode==='move'){ const t=topWithInkAt(toWorld(e.clientX,e.clientY),false); if(t){ reveal={sq:t[0], until:performance.now()+6000}; draw(); } }
 }
 cv.addEventListener('pointerup', end);
+// hover: with a mouse, a creation you can tap (to see the name, reply or share) reacts as the pointer passes over it
+let hoverSq = null, hoverAt = 0, hoverPrev = null, hoverOut = 0;
+function hoverLift(id){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return id===hoverSq ? .6 : 0;
+  const now=performance.now();
+  if(id===hoverSq){ const k=Math.min(1,(now-hoverAt)/160); if(k<1) draw(); return 1-Math.pow(1-k,3); }
+  if(id===hoverPrev){ const k=Math.min(1,(now-hoverOut)/160); if(k<1){ draw(); return Math.pow(1-k,3); } }
+  return 0;
+}
+cv.addEventListener('pointermove', e=>{
+  if(e.pointerType!=='mouse' || ptrs.size || net || adminOn()) return;
+  const t = (mode==='draw' || mode==='move') ? topWithInkAt(toWorld(e.clientX,e.clientY), mode==='draw') : null;
+  const id = t ? t[0] : null;
+  if(id===hoverSq) return;
+  hoverPrev = hoverSq; hoverOut = performance.now(); hoverSq = id; hoverAt = performance.now();
+  cv.style.cursor = id ? 'pointer' : ''; draw();
+});
+cv.addEventListener('pointerleave', ()=>{ if(hoverSq){ hoverPrev=hoverSq; hoverOut=performance.now(); hoverSq=null; cv.style.cursor=''; draw(); } });
+cv.addEventListener('pointerdown', ()=>{ if(hoverSq){ hoverSq=null; cv.style.cursor=''; } });
 cv.addEventListener('pointercancel', e=>{ ptrs.delete(e.pointerId); pinch=pan=maybe=null; localStroke=null; if(drag){drag=null;} draw(); });
 function pp(){ const [a,b]=[...ptrs.values()]; return {mx:(a.x+b.x)/2,my:(a.y+b.y)/2,d:Math.hypot(a.x-b.x,a.y-b.y)||1}; }
 cv.addEventListener('wheel', e=>{
@@ -788,6 +815,29 @@ if(admin){
   adminUi();
 }
 
+// ---------- share ----------
+$('share').onclick = async () => {
+  if(!reveal) return; const sq=reveal.sq; if(sq.startsWith('_')) return;
+  const url = location.origin + '/#' + sq, btn = $('share'), icon = btn.innerHTML;
+  const done = () => { btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'; setTimeout(()=>{ btn.innerHTML = icon; }, 1500); };
+  try{ if(navigator.share){ await navigator.share({title:'nothing00', url}); return; } }catch(e){ if(e && e.name==='AbortError') return; }
+  try{ await navigator.clipboard.writeText(url); done(); }catch{ note(url); }
+};
+function openShared(){ // a shared link lands on that creation
+  const id = location.hash.slice(1);
+  if(!/^s[a-z0-9]{1,16}$/.test(id) || !squares.has(id)) return;
+  flyTo(id); reveal = {sq:id, until:performance.now()+6000}; draw();
+}
+addEventListener('hashchange', openShared);
+
+// ---------- people here now ----------
+async function checkIn(){ if(!document.hidden) try{ await fetch('/api/here',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token})}); }catch{} }
+async function countHere(){
+  try{ const d = await (await fetch('/api/here',{cache:'no-store'})).json(); if(d.n>0){ $('heren').textContent = d.n; $('here').hidden = false; } }catch{}
+}
+checkIn().then(countHere); setInterval(checkIn, 30000); setInterval(()=>{ if(!document.hidden) countHere(); }, 15000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) checkIn().then(countHere); });
+
 if(location.hostname==='localhost') window.__bp = { squares, mine, get bubbles(){ return bubbles; }, layoutBubbles, counts:()=>counts, get mySq(){ return mySq; }, myAt, toWorld, get view(){ return view; } };
 // ---------- clock ----------
 function tick(){
@@ -801,7 +851,7 @@ function tick(){
 addEventListener('resize', resize);
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) poll(); });
 readColors(); resize(); tick(); setInterval(tick,1000);
-poll().then(()=>{ ui(); });
+poll().then(()=>{ ui(); openShared(); });
 setInterval(poll, 1500);
 ui();
 })();
