@@ -148,10 +148,10 @@ if(!myName || oldAuto.test(myName)){ myName = randomName(); store.set('bp-name',
 let day = null, lastV = 0;
 const applied = new Set();
 const squares = new Map();          // sq -> {x,y,r,z,items:[]}
-// On touch screens the page opens for browsing (one finger moves the page); tap the pen to draw.
+// On touch screens the page opens in text mode: a tap writes, one finger drags the page; tap the pen to draw.
 const touchFirst = matchMedia('(hover: none) and (pointer: coarse)').matches;
 const savedMode = store.get('bp-mode');
-let mySq = null, mode = (touchFirst && ['draw','text','move'].includes(savedMode)) ? savedMode : touchFirst ? 'move' : 'draw', ink = 0, net = false;   // mySq = the creation you last worked on
+let mySq = null, mode = (touchFirst && ['draw','text','move'].includes(savedMode)) ? savedMode : touchFirst ? 'text' : 'draw', ink = 0, net = false;   // mySq = the creation you last worked on
 const mine = new Set();                                    // all your creations today (temp ids start with "_")
 const MAX_MINE = 10;
 const saveMine = () => store.set('bp-sqs-'+day, JSON.stringify([...mine].filter(id=>!id.startsWith('_'))));
@@ -303,7 +303,7 @@ for(let i=0;i<5;i++){
   $('inks').appendChild(b);
 }
 for(const m of ['draw','text','move']) $('m-'+m).onclick = () => { mode=m; if(touchFirst) store.set('bp-mode', m); $('m-draw').classList.remove('pulse'); ui(); };
-if(touchFirst && mode==='move') setTimeout(()=>$('m-draw').classList.add('pulse'), 700);   // a gentle hint that you can draw
+if(touchFirst && mode!=='draw') setTimeout(()=>$('m-draw').classList.add('pulse'), 700);   // a gentle hint that you can draw
 $('net').onclick = async () => { closePanel(); net=!net; ui(); if(net){ await loadCounts(); fitBubbles(); } draw(); };
 function fitBubbles(){
   if(!bubbles.length) return;
@@ -565,7 +565,7 @@ function render(){
 const ptrs=new Map(); let pinch=null, pan=null, drag=null, tap=null;
 cv.addEventListener('pointerdown', e=>{
   cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(ptrs.size===2){ localStroke=null; pan=drag=maybe=null; const p=pp(); pinch={...p, v:{...view}}; draw(); return; }
+  if(ptrs.size===2){ localStroke=null; pan=drag=maybe=textDown=null; const p=pp(); pinch={...p, v:{...view}}; draw(); return; }
   if(ptrs.size>2) return;
   const w=toWorld(e.clientX,e.clientY);
   tap={x:e.clientX,y:e.clientY};
@@ -573,6 +573,7 @@ cv.addEventListener('pointerdown', e=>{
   if(!$('namebox').hidden && document.activeElement!==$('name')) closeName();
   if(!$('tp').hidden){ ptrs.delete(e.pointerId); tap=null; return; }
   if(adminOn()){ pan={x:e.clientX,y:e.clientY}; cv.classList.add('grabbing'); return; }
+  if(mode==='text'){ textDown={w, x:e.clientX, y:e.clientY}; return; }
   if(mode==='draw' && !myAt(w,24) && topWithInkAt(w,true)){ // a tap on someone's drawing shows their name; a drag still draws
     maybe={w, x:e.clientX, y:e.clientY}; return; }
   startAt(e, w);
@@ -601,11 +602,39 @@ function startAt(e, w){
   }
   pan={x:e.clientX,y:e.clientY}; cv.classList.add('grabbing');
 }
+let textDown = null;
+function inkAt(w){ // someone else's actual ink (not just their invisible square) under a tap
+  const tol=14/view.s; let best=null;
+  for(const [id,q] of squares){
+    if(mine.has(id) || !q.items.length) continue;
+    const l=toLocal(q,w); if(l.x<-tol||l.y<-tol||l.x>S+tol||l.y>S+tol) continue;
+    const hit=q.items.some(m=>{
+      if(m.t==='st'){ for(let i=0;i<m.pts.length;i+=2) if(Math.hypot(m.pts[i]-l.x,m.pts[i+1]-l.y)<tol+(m.w||3)) return true; return false; }
+      const n=textLines(m).length, ww=Math.min(S-m.x, widest(m.text,m.size));
+      return l.x>=m.x-tol && l.x<=m.x+ww+tol && l.y>=m.y-tol && l.y<=m.y+m.size*1.25*n+tol;
+    });
+    if(hit && (!best || q.z>best[1].z)) best=[id,q];
+  }
+  return best;
+}
+function textTap(w){ // text mode tap: edit your text, show someone's name, or write something new
+  const id=myAt(w);
+  if(id){ const q=squares.get(id), l=toLocal(q,w), hit=textAt(q,l);
+    if(hit){ mySq=id; ui(); openPanel({x:hit.x,y:hit.y,size:20}, hit, id); return; } }
+  const other=inkAt(w);
+  if(other){ reveal={sq:other[0], until:performance.now()+6000}; draw(); return; }
+  if(id){ const q=squares.get(id), l=toLocal(q,w); mySq=id; ui(); openPanel({x:l.x,y:l.y,size:20}, null, id); return; }
+  if(day) openPanel(null, null, null, w);
+}
 const r1=n=>Math.round(n*10)/10, cl=n=>Math.max(-20,Math.min(S+20,n));
 cv.addEventListener('pointermove', e=>{
   if(!ptrs.has(e.pointerId)) return; ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pinch){ const p=pp(), s=Math.min(6,Math.max(.08,pinch.v.s*p.d/pinch.d)), k=s/pinch.v.s;
     view={s, x:p.mx-(pinch.mx-pinch.v.x)*k, y:p.my-(pinch.my-pinch.v.y)*k}; draw(); return; }
+  if(textDown){
+    if(Math.hypot(e.clientX-textDown.x,e.clientY-textDown.y)<6) return;
+    pan={x:textDown.x, y:textDown.y}; textDown=null; cv.classList.add('grabbing');
+  }
   if(maybe){
     if(Math.hypot(e.clientX-maybe.x,e.clientY-maybe.y)<6) return;
     const m=maybe; maybe=null; startAt({clientX:m.x, clientY:m.y}, m.w);
@@ -627,6 +656,7 @@ function end(e){
   if(pinch){ if(ptrs.size<2) pinch=null; return; }
   const wasTap = tap && Math.hypot(e.clientX-tap.x,e.clientY-tap.y)<6; tap=null;
   if(adminOn() && !net){ pan=null; if(wasTap) adminPick(toWorld(e.clientX,e.clientY)); return; }
+  if(textDown){ const w=textDown.w; textDown=null; textTap(w); return; }
   if(maybe){ const t=topWithInkAt(maybe.w,true); maybe=null; if(t){ reveal={sq:t[0], until:performance.now()+6000}; draw(); return; } }
   if(drag){ const sq=rs(drag.sq), q=squares.get(sq); drag=null; spill(); if(q){ pendingMove++; send({t:'sq',x:q.x,y:q.y,r:q.r}, sq).finally(()=>pendingMove--); } return; }
   if(localStroke){ const {sq:sq0, ...st}=localStroke, sq=rs(sq0), q=squares.get(sq); localStroke=null;
@@ -651,7 +681,8 @@ function hoverLift(id){
 }
 cv.addEventListener('pointermove', e=>{
   if(e.pointerType!=='mouse' || ptrs.size || net || adminOn()) return;
-  const t = (mode==='draw' || mode==='move') ? topWithInkAt(toWorld(e.clientX,e.clientY), mode==='draw') : null;
+  const pw = toWorld(e.clientX,e.clientY);
+  const t = mode==='text' ? inkAt(pw) : (mode==='draw' || mode==='move') ? topWithInkAt(pw, mode==='draw') : null;
   const id = t ? t[0] : null;
   if(id===hoverSq) return;
   hoverPrev = hoverSq; hoverOut = performance.now(); hoverSq = id; hoverAt = performance.now();
@@ -659,7 +690,7 @@ cv.addEventListener('pointermove', e=>{
 });
 cv.addEventListener('pointerleave', ()=>{ if(hoverSq){ hoverPrev=hoverSq; hoverOut=performance.now(); hoverSq=null; cv.style.cursor=''; draw(); } });
 cv.addEventListener('pointerdown', ()=>{ if(hoverSq){ hoverSq=null; cv.style.cursor=''; } });
-cv.addEventListener('pointercancel', e=>{ ptrs.delete(e.pointerId); pinch=pan=maybe=null; localStroke=null; if(drag){drag=null;} draw(); });
+cv.addEventListener('pointercancel', e=>{ ptrs.delete(e.pointerId); pinch=pan=maybe=textDown=null; localStroke=null; if(drag){drag=null;} draw(); });
 function pp(){ const [a,b]=[...ptrs.values()]; return {mx:(a.x+b.x)/2,my:(a.y+b.y)/2,d:Math.hypot(a.x-b.x,a.y-b.y)||1}; }
 cv.addEventListener('wheel', e=>{
   e.preventDefault();
