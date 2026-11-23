@@ -24,6 +24,7 @@ export default async function handler(req, res) {
   const re = typeof b.re === 'string' && /^s[a-z0-9]{1,16}$/.test(b.re) && (await redis.hget(k.own, b.re)) ? b.re : null; // the creation this one answers
   const ev = await append(day, { t: 'sq', sq, x, y, r: 0, ...(name ? { name } : {}), ...(re ? { re } : {}) });
   if (!ev) return json(res, 507, { error: 'page is full for today' });
+  if (re) await redis.hincrby(k.rc, re, 1);
   await redis.hset(k.own, { [sq]: me });
   json(res, 200, { day, sq, ev });
 }

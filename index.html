@@ -85,6 +85,15 @@ button.primary{background:var(--mine);color:#fff}
 #tpc{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;padding:0 4px;margin-inline-end:auto}
 #tp.over #tpc{color:var(--ink1)}
 #tpok{background:var(--fg);color:var(--bar)}
+#recap{position:fixed;z-index:25;top:calc(48px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;background:var(--bar);border:1px solid var(--line);border-radius:999px;padding:6px 8px 6px 16px;box-shadow:0 6px 24px rgba(0,0,0,.1);color:var(--fg);font-size:14px;max-width:calc(100% - 32px);animation:drop .35s ease-out}
+#recap .rcn,#rcwin{display:flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums}
+#rcwin{color:var(--mine)}
+#rcwhen{color:var(--muted);font-size:12px}
+#rcx{min-height:0;min-width:0;width:28px;height:28px;padding:0}
+@keyframes drop{from{opacity:0;transform:translate(-50%,-8px)}to{opacity:1;transform:translate(-50%,0)}}
+#cd{position:fixed;inset:0;z-index:28;display:grid;place-items:center;pointer-events:none;font-size:min(34vw,220px);font-weight:400;color:var(--muted);opacity:.55;font-variant-numeric:tabular-nums}
+#cd.tickin{animation:tickin .9s ease-out}
+@keyframes tickin{from{transform:scale(1.25);opacity:0}to{transform:scale(1);opacity:.55}}
 #yday{min-width:0;min-height:0;width:28px;height:28px;padding:0;color:var(--muted);pointer-events:auto}
 #yday:hover{color:var(--fg)}
 #yv{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:color-mix(in srgb,var(--desk) 82%,transparent);backdrop-filter:blur(3px);padding:16px}
@@ -103,7 +112,7 @@ button.primary{background:var(--mine);color:#fff}
 #apwi{font:inherit;width:120px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--fg)}
 #m-draw.pulse{animation:pulse 1.1s ease-in-out 2}
 @keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 transparent}45%{transform:scale(1.14);box-shadow:0 0 0 5px color-mix(in srgb,var(--mine) 25%,transparent)}}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}#m-draw.pulse{animation:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}#m-draw.pulse,#recap,#cd.tickin{animation:none}}
 </style>
 </head>
 <body>
@@ -114,6 +123,8 @@ button.primary{background:var(--mine);color:#fff}
 <div id="note" class="corner" dir="rtl"></div>
 <div id="rev" hidden><button id="reply" class="icon" aria-label="הגב" title="הגב"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 01-11.6 7.1L4 20l1.1-4A8 8 0 1120 12z"/></svg></button><button id="share" class="icon" aria-label="שתף" title="שתף"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg></button></div>
 <div id="namebox" hidden dir="rtl"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg><input id="name" maxlength="24" autocomplete="nickname" aria-label="השם שלי"><button id="nameok" class="icon" aria-label="שמור" title="שמור"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
+<div id="recap" hidden role="status"><span id="rcwhen"></span><span class="rcn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.6"/></svg><b id="rcv"></b></span><span class="rcn"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 01-11.6 7.1L4 20l1.1-4A8 8 0 1120 12z"/></svg><b id="rcr"></b></span><span id="rcwin" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18h16M5 15l-1.5-8 5 3.5L12 5l3.5 5.5 5-3.5L19 15z"/></svg><span>היצירה שלך שרדה את חצות</span></span><button id="rcx" class="icon" aria-label="סגור"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<div id="cd" hidden aria-live="polite"></div>
 <div id="yv" hidden role="dialog" aria-label="היצירה שהכי עניינה אתמול"><div class="card"><button id="yvx" class="icon" aria-label="סגור" title="סגור"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><canvas id="yc" aria-hidden="true"></canvas><div class="meta"><span id="yvname"></span><span class="eye"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.6"/></svg><span id="yvn"></span></span></div></div></div>
 <div id="tp" hidden role="dialog" aria-label="טקסט">
   <textarea id="tpa" maxlength="600" dir="auto" aria-label="טקסט"></textarea>
@@ -133,7 +144,7 @@ button.primary{background:var(--mine);color:#fff}
   <span class="sep"></span>
   <button id="me" class="icon" aria-label="השם שלי" title="השם שלי" aria-pressed="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg></button>
   <button id="net" class="icon" aria-pressed="false" aria-label="רשת" title="רשת"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="10" r="5.5"/><circle cx="17.5" cy="16.5" r="3"/><circle cx="17" cy="5.5" r="2"/></svg></button>
-  <span id="admin" hidden><span class="sep"></span><span id="gbtn" title="כניסת מנהל" hidden></span><form id="apw" hidden><input id="apwi" type="password" autocomplete="current-password" placeholder="••••••••" aria-label="סיסמת מנהל"><button id="apwb" class="icon" type="submit" aria-label="כניסה" title="כניסה"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg></button></form><span id="atools" hidden style="display:contents"><span id="ashield" class="icon" title="מצב מנהל" style="color:var(--ink1);display:grid;place-items:center;padding:0 4px"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.3-3 7.7-7 9.5-4-1.8-7-5.2-7-9.5V6z"/></svg></span><button id="aitem" class="icon" disabled aria-label="מחק קו" title="מחק קו"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 20H20"/><path d="M4.6 14.6l8.9-8.9a2 2 0 012.8 0l2.5 2.5a2 2 0 010 2.8L11 19.8a1 1 0 01-.7.2H7.9a1 1 0 01-.7-.3l-2.6-2.6a1.8 1.8 0 010-2.5z"/><path d="M9.5 9.7l5 5"/></svg></button><button id="adel" class="icon" disabled aria-label="מחק ציור" title="מחק ציור"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M8 8l8 8M16 8l-8 8"/></svg></button><button id="aout" class="icon" aria-label="יציאה" title="יציאה"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h4a2 2 0 012 2v12a2 2 0 01-2 2h-4"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg></button></span></span>
+  <span id="admin" hidden><span class="sep"></span><span id="gbtn" title="כניסת מנהל" hidden></span><form id="apw" hidden><input id="apwi" type="password" autocomplete="current-password" placeholder="••••••••" aria-label="סיסמת מנהל"><button id="apwb" class="icon" type="submit" aria-label="כניסה" title="כניסה"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg></button></form><span id="atools" hidden style="display:contents"><span id="ashield" class="icon" title="מצב מנהל" style="color:var(--ink1);display:grid;place-items:center;padding:0 4px"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.3-3 7.7-7 9.5-4-1.8-7-5.2-7-9.5V6z"/></svg></span><button id="aitem" class="icon" disabled aria-label="מחק קו" title="מחק קו"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 20H20"/><path d="M4.6 14.6l8.9-8.9a2 2 0 012.8 0l2.5 2.5a2 2 0 010 2.8L11 19.8a1 1 0 01-.7.2H7.9a1 1 0 01-.7-.3l-2.6-2.6a1.8 1.8 0 010-2.5z"/><path d="M9.5 9.7l5 5"/></svg></button><button id="adel" class="icon" disabled aria-label="מחק ציור" title="מחק ציור"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M8 8l8 8M16 8l-8 8"/></svg></button><button id="aday" class="icon" aria-label="הורד את הדף של אתמול" title="הורד את הדף של אתמול"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19h14"/></svg></button><button id="aout" class="icon" aria-label="יציאה" title="יציאה"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h4a2 2 0 012 2v12a2 2 0 01-2 2h-4"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg></button></span></span>
 </div></div>
 
 <script>
@@ -218,6 +229,7 @@ async function poll(){
     const d = await r.json();
     if(d.reset && d.day!==day){
       squares.clear(); applied.clear(); lastV=0; counts={};
+      if(day) wipedDay = d.day;   // the new day has arrived: show its page at full strength
       day = d.day; loadMine(); ui(); loadYesterday();
     }
     for(const e of d.events){ apply(e); lastV=Math.max(lastV,e.v); }
@@ -570,8 +582,9 @@ function paintBubbles(){
 
 function render(){
   raf=0;
-  ctx.setTransform(1,0,0,1,0,0); ctx.fillStyle=col.desk; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.fillStyle=col.desk; ctx.fillRect(0,0,cv.width,cv.height);
   ctx.setTransform(dpr*view.s,0,0,dpr*view.s,dpr*view.x,dpr*view.y);
+  const fade = midnightFade(); if(fade<1){ ctx.globalAlpha = fade; draw(); }
   if(net){ paintBubbles(); }
   else{
     const tl=toWorld(0,0), br=toWorld(innerWidth,innerHeight), pad=S;
@@ -581,6 +594,7 @@ function render(){
     });
     paintReveal();
   }
+  ctx.globalAlpha = 1;
   if(net || !reveal) $('rev').hidden = true;
   $('hint').hidden = squares.size>0 || day===null;
 }
@@ -872,8 +886,50 @@ async function adminDelete(withItem){
     apply(d.ev); adminItem=null; if(!withItem) adminSel=null; adminUi(); draw();
   }catch{ note('המחיקה נכשלה'); }
 }
+// The admin's picture of yesterday's page: every creation where it stood, before midnight wiped it.
+function buildDay(events){
+  const sqs=new Map();
+  for(const e of events){
+    let q=sqs.get(e.sq);
+    if(e.t==='sq'){ if(!q) sqs.set(e.sq, q={x:e.x,y:e.y,r:e.r,items:[]}); else { q.x=e.x; q.y=e.y; q.r=e.r; } continue; }
+    if(!q) continue;
+    if(e.t==='del') sqs.delete(e.sq);
+    else if(e.t==='un') q.items=q.items.filter(i=>i.id!==e.id);
+    else if(e.t==='te'){ const it=q.items.find(i=>i.id===e.id); if(it) Object.assign(it,{ink:e.ink,size:e.size,x:e.x,y:e.y,text:e.text}); }
+    else if(e.t==='st'||e.t==='tx') q.items.push(e);
+  }
+  return [...sqs.values()].filter(q=>q.items.length);
+}
+async function downloadDay(){
+  const btn=$('aday'); btn.disabled=true;
+  try{
+    const r=await fetch('/api/admin-day',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({session:adminSession})});
+    if(r.status===401){ adminLogout(); note('צריך להתחבר שוב'); return; }
+    const d=await r.json(); const list=buildDay(d.events||[]);
+    if(!list.length){ note('אתמול הדף נשאר ריק'); return; }
+    let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+    for(const q of list){ const h=S*.75; x0=Math.min(x0,q.x-h); y0=Math.min(y0,q.y-h); x1=Math.max(x1,q.x+h); y1=Math.max(y1,q.y+h); }
+    const pad=120, W=x1-x0+pad*2, H=y1-y0+pad*2, sc=Math.min(1, 6000/Math.max(W,H));
+    const c=document.createElement('canvas'); c.width=Math.round(W*sc); c.height=Math.round(H*sc+60);
+    const light={desk:'#e7e8ea',paper:'#ffffff',edge:'rgba(0,0,0,.10)',fg:'#1b1b1a',muted:'#7d7f84',mine:'#1f5fd1',ink0:'#1b1b1a',ink1:'#d23a2a',ink2:'#1f5fd1',ink3:'#1f8a4c',ink4:'#e0a100'};
+    const keep={...col}, main=ctx; Object.assign(col, light); ctx=c.getContext('2d');
+    try{
+      ctx.fillStyle=light.desk; ctx.fillRect(0,0,c.width,c.height);
+      for(const q of list){
+        ctx.save(); ctx.setTransform(sc,0,0,sc,(q.x-x0+pad)*sc,(q.y-y0+pad)*sc); ctx.rotate(q.r||0); ctx.translate(-S/2,-S/2);
+        ctx.beginPath(); ctx.rect(0,0,S,S); ctx.clip(); paintItems(q); ctx.restore();
+      }
+      ctx.setTransform(1,0,0,1,0,0); ctx.fillStyle=light.muted; ctx.font=`${Math.max(14,Math.round(c.width/90))}px ${getComputedStyle(document.body).fontFamily}`;
+      ctx.textAlign='right'; ctx.textBaseline='bottom'; ctx.direction='ltr';
+      ctx.fillText(`nothing00 · ${d.day.split('-').reverse().join('.')} · ${list.length}`, c.width-20, c.height-18);
+    } finally { ctx=main; Object.assign(col, keep); draw(); }
+    c.toBlob(blob=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`nothing00-${d.day}.png`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 5000); }, 'image/png');
+  }catch{ note('ההורדה נכשלה'); }
+  finally{ btn.disabled=false; }
+}
 if(admin){
   $('adel').onclick = () => adminDelete(false);
+  $('aday').onclick = downloadDay;
   $('aitem').onclick = () => adminDelete(true);
   $('aout').onclick = adminLogout;
   if(location.hostname==='localhost') window.bpAdminLogin = adminLogin;
@@ -951,13 +1007,25 @@ for(const [id, name] of [['wa','whatsapp_click'], ['xl','x_click']]) $(id).addEv
   try{ window.va && va('event', {name}); }catch{}
 });
 
-if(location.hostname==='localhost') window.__bp = { squares, mine, get bubbles(){ return bubbles; }, layoutBubbles, counts:()=>counts, get mySq(){ return mySq; }, myAt, toWorld, get view(){ return view; } };
+if(location.hostname==='localhost') window.__bp = { squares, mine, get yday(){ return yday; }, get day(){ return day; }, get bubbles(){ return bubbles; }, layoutBubbles, counts:()=>counts, get mySq(){ return mySq; }, myAt, toWorld, get view(){ return view; } };
 // ---------- clock ----------
 function tick(){
   const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Jerusalem',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(new Date());
   const g=t=>+p.find(x=>x.type===t).value, left=86400-((g('hour')%24)*3600+g('minute')*60+g('second'));
   const f=n=>String(n).padStart(2,'0');
   $('clockt').textContent=`${f(Math.floor(left/3600))}:${f(Math.floor(left%3600/60))}:${f(left%60)}`;
+  midnightAt = Date.now() + left*1000 - (Date.now()%1000);
+  const cd=$('cd');                                   // the last ten seconds, counted down in the middle of the page
+  if(left<=10 && left>=1){ if(cd.textContent!==String(left)){ cd.textContent=left; cd.hidden=false; cd.classList.remove('tickin'); void cd.offsetWidth; cd.classList.add('tickin'); } draw(); }
+  else if(!cd.hidden){ cd.hidden=true; cd.textContent=''; }
+  if(left===86400 || left<=1) setTimeout(poll, 1200);  // pick up the new day promptly
+}
+// Ten seconds before midnight everything fades out; it stays clear until the new day arrives from the server.
+let midnightAt = Infinity, wipedDay = null;
+function midnightFade(){
+  const r = midnightAt - Date.now();
+  if(r > 10000 || r < -60000 || wipedDay===day) return 1;
+  return Math.max(0, Math.min(1, r/10000));
 }
 
 // ---------- boot ----------
@@ -972,7 +1040,35 @@ function randomStart(){ // open somewhere among the most recent creations, so ev
   const barTop=document.querySelector('.tools').getBoundingClientRect().top;
   view.x=innerWidth/2-m.x*view.s; view.y=barTop/2-m.y*view.s; draw();
 }
-poll().then(()=>{ ui(); randomStart(); openShared(); });
+// ---------- what happened to your creations ----------
+const dayBeforeC = d => { const t=new Date(d+'T12:00:00Z'); t.setUTCDate(t.getUTCDate()-1); return t.toISOString().slice(0,10); };
+const sum = o => Object.values(o||{}).reduce((a,b)=>a+b,0);
+let recapTimer = 0;
+function showRecap({views, replies, survived, when}){
+  $('rcwhen').textContent = when; $('rcv').textContent = views; $('rcr').textContent = replies;
+  $('rcwin').hidden = !survived; $('recap').hidden = false;
+  clearTimeout(recapTimer); recapTimer = setTimeout(()=>{ $('recap').hidden = true; }, 10000);
+}
+$('rcx').onclick = () => { $('recap').hidden = true; };
+async function recap(){
+  if(!day) return;
+  const y = dayBeforeC(day);
+  let ySqs=[]; try{ ySqs = JSON.parse(store.get('bp-sqs-'+y)||'[]'); }catch{}
+  if(ySqs.length && !store.get('bp-recap-'+y)){          // first visit since yesterday's creations were wiped
+    const d = await post('/api/mine',{day:y, sqs:ySqs}).catch(()=>null);
+    if(d){ store.set('bp-recap-'+y,'1');
+      const survived = !!(yday && ySqs.includes(yday.sq));
+      if(sum(d.views) || sum(d.replies) || survived){ showRecap({views:sum(d.views), replies:sum(d.replies), survived, when:'אתמול'}); return; } }
+  }
+  const tSqs=[...mine].filter(id=>!id.startsWith('_'));   // back on the same day: what changed since your last visit
+  if(!tSqs.length) return;
+  const d = await post('/api/mine',{day, sqs:tSqs}).catch(()=>null); if(!d) return;
+  const now = {v:sum(d.views), r:sum(d.replies)};
+  let last=null; try{ last = JSON.parse(store.get('bp-last-'+day)||'null'); }catch{}
+  store.set('bp-last-'+day, JSON.stringify(now));
+  if(last && (now.v>last.v || now.r>last.r)) showRecap({views:now.v-last.v, replies:now.r-last.r, survived:false, when:'מאז הביקור הקודם'});
+}
+poll().then(async ()=>{ ui(); randomStart(); openShared(); await loadYesterday(); recap(); });   // a fresh look at yesterday's survivor before the recap
 setInterval(poll, 1500);
 ui();
 })();

@@ -3,7 +3,7 @@ import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 process.env.BLANK_DEV ||= '1';
 const routes = {};
-for (const n of ['events', 'claim', 'act', 'view', 'views', 'admin', 'admin-login', 'config', 'here', 'yesterday']) routes['/api/' + n] = (await import(`./api/${n}.js`)).default;
+for (const n of ['events', 'claim', 'act', 'view', 'views', 'admin', 'admin-login', 'config', 'here', 'yesterday', 'mine', 'admin-day']) routes['/api/' + n] = (await import(`./api/${n}.js`)).default;
 http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://x');
   const h = routes[u.pathname];
