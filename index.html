@@ -109,12 +109,12 @@ button.primary{background:var(--mine);color:#fff}
 <body>
 <canvas id="c" aria-label="הדף המשותף"></canvas>
 <div id="hint" hidden aria-label="גע כדי לכתוב"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1-4.5L16 4.5a2.1 2.1 0 013 3L8 18.5 4 20z"/><path d="M14 6.5l3.5 3.5"/></svg></div>
-<div id="clock" class="corner" dir="ltr"><button id="yday" class="icon" hidden aria-label="היצירה הכי נצפית של אתמול" title="היצירה הכי נצפית של אתמול"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 102.5-6"/><path d="M3 3.5V8h4.5"/><path d="M12 7.5V12l3 2"/></svg></button><span id="here" title="כמה אנשים פה עכשיו" hidden><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.3 3-5 6-5s5.4 1.7 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.2c2.4.2 4 1.7 4.5 4.8"/></svg><span id="heren"></span></span><span title="הדף נמחק בחצות. היצירה הכי נצפית שורדת יום נוסף." style="display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10M7 21h10"/><path d="M8 3c0 4 8 5 8 9s-8 5-8 9M16 3c0 4-8 5-8 9"/><path d="M16 21c0-4-8-5-8-9"/></svg><span id="clockt"></span></span></div>
+<div id="clock" class="corner" dir="ltr"><button id="yday" class="icon" hidden aria-label="היצירה שהכי עניינה אתמול" title="היצירה שהכי עניינה אתמול"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 102.5-6"/><path d="M3 3.5V8h4.5"/><path d="M12 7.5V12l3 2"/></svg></button><span id="here" title="כמה אנשים פה עכשיו" hidden><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.3 3-5 6-5s5.4 1.7 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.2c2.4.2 4 1.7 4.5 4.8"/></svg><span id="heren"></span></span><span title="הדף נמחק בחצות. היצירה שהכי עניינה אנשים שורדת יום נוסף." style="display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10M7 21h10"/><path d="M8 3c0 4 8 5 8 9s-8 5-8 9M16 3c0 4-8 5-8 9"/><path d="M16 21c0-4-8-5-8-9"/></svg><span id="clockt"></span></span></div>
 <div id="social"><a id="wa" href="https://whatsapp.com/channel/0029VbE8AcQCxoApgwwe3e16" target="_blank" rel="noopener" aria-label="היצירות הכי טובות של היום מתפרסמות כאן" title="היצירות הכי טובות של היום מתפרסמות כאן"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></a><a id="xl" href="https://x.com/WRITE_NOTHING00" target="_blank" rel="noopener" aria-label="nothing00 ב-X" title="nothing00 ב-X"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a></div>
 <div id="note" class="corner" dir="rtl"></div>
 <div id="rev" hidden><button id="reply" class="icon" aria-label="הגב" title="הגב"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 01-11.6 7.1L4 20l1.1-4A8 8 0 1120 12z"/></svg></button><button id="share" class="icon" aria-label="שתף" title="שתף"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg></button></div>
 <div id="namebox" hidden dir="rtl"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg><input id="name" maxlength="24" autocomplete="nickname" aria-label="השם שלי"><button id="nameok" class="icon" aria-label="שמור" title="שמור"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
-<div id="yv" hidden role="dialog" aria-label="היצירה הכי נצפית של אתמול"><div class="card"><button id="yvx" class="icon" aria-label="סגור" title="סגור"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><canvas id="yc" aria-hidden="true"></canvas><div class="meta"><span id="yvname"></span><span class="eye"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.6"/></svg><span id="yvn"></span></span></div></div></div>
+<div id="yv" hidden role="dialog" aria-label="היצירה שהכי עניינה אתמול"><div class="card"><button id="yvx" class="icon" aria-label="סגור" title="סגור"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><canvas id="yc" aria-hidden="true"></canvas><div class="meta"><span id="yvname"></span><span class="eye"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.6"/></svg><span id="yvn"></span></span></div></div></div>
 <div id="tp" hidden role="dialog" aria-label="טקסט">
   <textarea id="tpa" maxlength="600" dir="auto" aria-label="טקסט"></textarea>
   <div class="row"><span id="tpc" dir="ltr">0/600</span>
@@ -173,7 +173,7 @@ const MAX_MINE = 10;
 const saveMine = () => store.set('bp-sqs-'+day, JSON.stringify([...mine].filter(id=>!id.startsWith('_'))));
 function loadMine(){ mine.clear(); try{ JSON.parse(store.get('bp-sqs-'+day)||'[]').forEach(id=>mine.add(id)); }catch{} const old=store.get('bp-sq-'+day); if(old) mine.add(old); mySq=[...mine].pop()||null; }
 let view = {x: innerWidth/2, y: innerHeight/2.3, s: Math.min(1, innerWidth/(S*1.4))};
-let counts = {};
+let counts = {}, focusCounts = {}, focusWeight = 5;
 let pendingMove = 0;
 
 // ---------- colors ----------
@@ -497,11 +497,13 @@ let bubbles = [];
 const R_MAX = 300, R_DOT = 16, GAP = 30, LABEL_AT = 22;   // a circle shows its views once its radius is 22px on screen
 function layoutBubbles(){
   const ids=[...squares.keys()].filter(id=>squares.get(id).items.length);   // only creations with something in them
-  const max=Math.max(0,...ids.map(i=>counts[i]||0));
+  // the eye shows how many people saw it; the circle's size shows interest (a zoom-in counts more than a glance)
+  const score = id => (counts[id]||0) + (focusWeight-1)*(focusCounts[id]||0);
+  const max=Math.max(0,...ids.map(score));
   const prev=new Map(bubbles.map(b=>[b.id,b]));
-  bubbles = ids.map((id,i)=>{ const q=squares.get(id), n=counts[id]||0, p=prev.get(id);
-    const R = max ? Math.max(R_DOT, R_MAX*Math.sqrt(n/max)) : 70;           // no views anywhere yet: all the same
-    return {i, id, n, R, re:q.re, x:p?p.x:q.x, y:p?p.y:q.y, tx:p?p.tx:q.x, ty:p?p.ty:q.y, top: n>0 && n===max}; });
+  bubbles = ids.map((id,i)=>{ const q=squares.get(id), n=counts[id]||0, sc=score(id), p=prev.get(id);
+    const R = max ? Math.max(R_DOT, R_MAX*Math.sqrt(sc/max)) : 70;          // nothing seen anywhere yet: all the same
+    return {i, id, n, R, re:q.re, x:p?p.x:q.x, y:p?p.y:q.y, tx:p?p.tx:q.x, ty:p?p.ty:q.y, top: sc>0 && sc===max}; });
   // the layout works on targets (tx,ty); the circles then glide there
   const byId=new Map(bubbles.map(b=>[b.id,b])), links=bubbles.filter(b=>b.re && byId.has(b.re)).map(b=>[b, byId.get(b.re)]);
   // push overlapping circles apart; a grid keeps this fast with many circles
@@ -784,27 +786,41 @@ $('tpx').onclick = closePanel;
 $('tpdel').onclick = () => { if(!tp||!tp.edit) return; const sq=rs(tp.sq), q=squares.get(sq), it=tp.edit; closePanel(); if(q) removeText(q,it,sq); };
 
 // ---------- views ----------
-const seenTime = {}; let queue = [];
-function seenKey(){ return 'bp-seen-'+day; }
-function reported(){ try{ return new Set(JSON.parse(store.get(seenKey())||'[]')); }catch{ return new Set(); } }
+// Two kinds of view, each counted once per person per creation per day:
+//  - a glance: the creation is on screen for 2 seconds
+//  - a zoom-in: you zoomed well in (1.6x your starting zoom) and the creation sits in the middle of the screen for 1 second
+const seenTime = {}, focusTime = {}; let queue = [], focusQueue = [], startZoom = null;
+const listKey = kind => 'bp-'+kind+'-'+day;
+function reported(kind='seen'){ try{ return new Set(JSON.parse(store.get(listKey(kind))||'[]')); }catch{ return new Set(); } }
+function inkMiddle(q){ const b=inkBox(q.items); return fromLocal(q, {x:(b.x0+b.x1)/2, y:(b.y0+b.y1)/2}); }
 setInterval(()=>{
   if(document.hidden || net || !day) return;
-  const done = reported();
+  if(startZoom==null) startZoom = view.s;
+  const done = reported('seen'), zoomedDone = reported('focus'), zoomedIn = view.s >= startZoom*1.6;
   for(const [id,q] of squares){
-    if(mine.has(id) || done.has(id) || queue.includes(id) || !q.items.length) continue;   // empty creations are not views
+    if(mine.has(id) || !q.items.length) continue;   // your own and empty creations are not views
     const p=toScreen(q.x,q.y), big=S*view.s>=90;
-    if(big && p.x>0 && p.y>0 && p.x<innerWidth && p.y<innerHeight){ if((seenTime[id]=(seenTime[id]||0)+1)>=2) queue.push(id); }
-    else seenTime[id]=0;
+    if(!done.has(id) && !queue.includes(id)){
+      if(big && p.x>0 && p.y>0 && p.x<innerWidth && p.y<innerHeight){ if((seenTime[id]=(seenTime[id]||0)+1)>=2) queue.push(id); }
+      else seenTime[id]=0;
+    }
+    if(zoomedIn && !zoomedDone.has(id) && !focusQueue.includes(id)){
+      const m=toScreen(...Object.values(inkMiddle(q)));
+      if(Math.abs(m.x-innerWidth/2)<innerWidth*.3 && Math.abs(m.y-innerHeight/2)<innerHeight*.3){ if((focusTime[id]=(focusTime[id]||0)+1)>=1) focusQueue.push(id); }
+      else focusTime[id]=0;
+    }
   }
 }, 1000);
 setInterval(async ()=>{
-  if(!queue.length) return;
-  const batch=queue.splice(0,40);
-  try{ await post('/api/view',{sqs:batch}); const d=reported(); batch.forEach(b=>d.add(b)); store.set(seenKey(), JSON.stringify([...d])); }
-  catch{ queue.unshift(...batch); }
+  if(!queue.length && !focusQueue.length) return;
+  const sqs=queue.splice(0,40), focus=focusQueue.splice(0,40);
+  try{ await post('/api/view',{sqs, focus});
+    const d=reported('seen'); sqs.concat(focus).forEach(b=>d.add(b)); store.set(listKey('seen'), JSON.stringify([...d]));
+    const f=reported('focus'); focus.forEach(b=>f.add(b)); store.set(listKey('focus'), JSON.stringify([...f])); }
+  catch{ queue.unshift(...sqs); focusQueue.unshift(...focus); }
 }, 4000);
 async function loadCounts(){
-  try{ const r=await fetch('/api/views',{cache:'no-store'}); const d=await r.json(); if(d.day===day) counts=d.counts||{}; }catch{}
+  try{ const r=await fetch('/api/views',{cache:'no-store'}); const d=await r.json(); if(d.day===day){ counts=d.counts||{}; focusCounts=d.focus||{}; focusWeight=d.weight||5; } }catch{}
   layoutBubbles(); draw();
 }
 setInterval(()=>{ if(net && !document.hidden) loadCounts(); }, 6000);
@@ -948,7 +964,15 @@ function tick(){
 addEventListener('resize', resize);
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) poll(); });
 readColors(); resize(); tick(); setInterval(tick,1000);
-poll().then(()=>{ ui(); openShared(); });
+function randomStart(){ // open somewhere among the most recent creations, so everyone sees something different
+  if(/^#s[a-z0-9]/.test(location.hash)) return;
+  const recent=[...squares].filter(([id,q])=>q.items.length && !mine.has(id)).slice(-60);
+  if(!recent.length) return;
+  const [,q]=recent[Math.floor(Math.random()*recent.length)], m=inkMiddle(q);
+  const barTop=document.querySelector('.tools').getBoundingClientRect().top;
+  view.x=innerWidth/2-m.x*view.s; view.y=barTop/2-m.y*view.s; draw();
+}
+poll().then(()=>{ ui(); randomStart(); openShared(); });
 setInterval(poll, 1500);
 ui();
 })();
