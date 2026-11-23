@@ -926,6 +926,12 @@ $('yv').addEventListener('click', e=>{ if(e.target===$('yv')) hideYesterday(); }
 addEventListener('keydown', e=>{ if(e.key==='Escape' && !$('yv').hidden) hideYesterday(); });
 loadYesterday();
 
+// count clicks on the WhatsApp channel link (Google Analytics and Vercel)
+$('wa').addEventListener('click', ()=>{
+  try{ window.gtag && gtag('event', 'whatsapp_click', {link_url: $('wa').href}); }catch{}
+  try{ window.va && va('event', {name: 'whatsapp_click'}); }catch{}
+});
+
 if(location.hostname==='localhost') window.__bp = { squares, mine, get bubbles(){ return bubbles; }, layoutBubbles, counts:()=>counts, get mySq(){ return mySq; }, myAt, toWorld, get view(){ return view; } };
 // ---------- clock ----------
 function tick(){
