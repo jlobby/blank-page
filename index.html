@@ -108,8 +108,8 @@ button.primary{background:var(--mine);color:#fff}
 </div>
 
 <div id="bar"><div class="tools" role="toolbar">
-  <button id="m-draw" class="icon" aria-pressed="true" aria-label="עט" title="עט"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1-4.5L16 4.5a2.1 2.1 0 013 3L8 18.5 4 20z"/><path d="M14 6.5l3.5 3.5"/></svg></button>
   <button id="m-text" class="icon" aria-pressed="false" aria-label="טקסט" title="טקסט"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6.5V5h14v1.5"/><path d="M12 5v14"/><path d="M9.5 19h5"/></svg></button>
+  <button id="m-draw" class="icon" aria-pressed="false" aria-label="עט" title="עט"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1-4.5L16 4.5a2.1 2.1 0 013 3L8 18.5 4 20z"/><path d="M14 6.5l3.5 3.5"/></svg></button>
   <button id="m-move" class="icon" aria-pressed="false" aria-label="הזזה" title="הזזה"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M3 12h18"/><path d="M9.5 5.5L12 3l2.5 2.5M9.5 18.5L12 21l2.5-2.5M5.5 9.5L3 12l2.5 2.5M18.5 9.5L21 12l-2.5 2.5"/></svg></button>
   <span class="sep"></span>
   <span id="inks"></span>
@@ -148,10 +148,10 @@ if(!myName || oldAuto.test(myName)){ myName = randomName(); store.set('bp-name',
 let day = null, lastV = 0;
 const applied = new Set();
 const squares = new Map();          // sq -> {x,y,r,z,items:[]}
-// On touch screens the page opens in text mode: a tap writes, one finger drags the page; tap the pen to draw.
+// Everyone starts in text mode: a tap writes, a drag moves the page; tap the pen to draw. The chosen tool is remembered.
 const touchFirst = matchMedia('(hover: none) and (pointer: coarse)').matches;
 const savedMode = store.get('bp-mode');
-let mySq = null, mode = (touchFirst && ['draw','text','move'].includes(savedMode)) ? savedMode : touchFirst ? 'text' : 'draw', ink = 0, net = false;   // mySq = the creation you last worked on
+let mySq = null, mode = ['draw','text','move'].includes(savedMode) ? savedMode : 'text', ink = 0, net = false;   // mySq = the creation you last worked on
 const mine = new Set();                                    // all your creations today (temp ids start with "_")
 const MAX_MINE = 10;
 const saveMine = () => store.set('bp-sqs-'+day, JSON.stringify([...mine].filter(id=>!id.startsWith('_'))));
@@ -302,8 +302,8 @@ for(let i=0;i<5;i++){
   b.onclick=()=>{ ink=i; [...$('inks').children].forEach((d,j)=>d.setAttribute('aria-pressed', j===i)); };
   $('inks').appendChild(b);
 }
-for(const m of ['draw','text','move']) $('m-'+m).onclick = () => { mode=m; if(touchFirst) store.set('bp-mode', m); $('m-draw').classList.remove('pulse'); ui(); };
-if(touchFirst && mode!=='draw') setTimeout(()=>$('m-draw').classList.add('pulse'), 700);   // a gentle hint that you can draw
+for(const m of ['draw','text','move']) $('m-'+m).onclick = () => { mode=m; store.set('bp-mode', m); $('m-draw').classList.remove('pulse'); ui(); };
+if(mode!=='draw') setTimeout(()=>$('m-draw').classList.add('pulse'), 700);   // a gentle hint that you can draw
 $('net').onclick = async () => { closePanel(); net=!net; ui(); if(net){ await loadCounts(); fitBubbles(); } draw(); };
 function fitBubbles(){
   if(!bubbles.length) return;
@@ -597,7 +597,7 @@ function startAt(e, w){
     e.preventDefault?.();
     const id = myAt(w);
     if(id){ const q=squares.get(id), l=toLocal(q,w), hit=textAt(q,l); mySq=id; ui();
-      openPanel(hit ? {x:hit.x,y:hit.y,size:20} : {x:l.x,y:l.y,size:20}, hit, id); return; }
+      openPanel(hit ? {x:hit.x,y:hit.y,size:BIG_TEXT} : {x:l.x,y:l.y,size:BIG_TEXT}, hit, id); return; }
     if(day){ openPanel(null, null, null, w); return; }   // the creation is made only when the text is saved
   }
   pan={x:e.clientX,y:e.clientY}; cv.classList.add('grabbing');
@@ -620,10 +620,10 @@ function inkAt(w){ // someone else's actual ink (not just their invisible square
 function textTap(w){ // text mode tap: edit your text, show someone's name, or write something new
   const id=myAt(w);
   if(id){ const q=squares.get(id), l=toLocal(q,w), hit=textAt(q,l);
-    if(hit){ mySq=id; ui(); openPanel({x:hit.x,y:hit.y,size:20}, hit, id); return; } }
+    if(hit){ mySq=id; ui(); openPanel({x:hit.x,y:hit.y,size:BIG_TEXT}, hit, id); return; } }
   const other=inkAt(w);
   if(other){ reveal={sq:other[0], until:performance.now()+6000}; draw(); return; }
-  if(id){ const q=squares.get(id), l=toLocal(q,w); mySq=id; ui(); openPanel({x:l.x,y:l.y,size:20}, null, id); return; }
+  if(id){ const q=squares.get(id), l=toLocal(q,w); mySq=id; ui(); openPanel({x:l.x,y:l.y,size:BIG_TEXT}, null, id); return; }
   if(day) openPanel(null, null, null, w);
 }
 const r1=n=>Math.round(n*10)/10, cl=n=>Math.max(-20,Math.min(S+20,n));
@@ -703,7 +703,7 @@ cv.addEventListener('wheel', e=>{
 
 // text: a small panel for writing and editing
 const tpa=$('tpa'); let tp=null;
-const MIN_TEXT = 11, MAX_CHARS = 600;
+const MIN_TEXT = 11, MAX_CHARS = 600, BIG_TEXT = 40;   // new text starts large and shrinks to fit as it grows
 const widest = (t,size) => Math.max(0, ...t.split('\n').map(ln=>measure(ln,size)));
 // Fit text inside the square: keep its spot if it fits, else move it in,
 // then use the full width, then shrink the letters. over = it still does not fit.
@@ -724,7 +724,7 @@ function textAt(q, l){ // own text under a tap, if any
 }
 function openPanel(at, edit, sq, w){ // sq: the creation it goes in; none yet = make one at w on save
   closeName();
-  tp={at: at || {x:S/2-60, y:S/2-10, size:20}, edit, sq, w, ink: edit ? edit.ink : ink};
+  tp={at: at || {x:S/2-60, y:S/2-10, size:BIG_TEXT}, edit, sq, w, ink: edit ? edit.ink : ink};
   tpa.value = edit ? edit.text : ''; tpa.style.color = col['ink'+tp.ink];
   $('tpdel').hidden = !edit; $('tp').hidden = false; tpInput(); tpa.focus();
 }
@@ -738,7 +738,7 @@ function tpInput(){
 function savePanel(){
   if(!tp) return; let {at,edit,sq,w,ink:k}=tp; let t=tpa.value.trim().replace(/\n{3,}/g,'\n\n');
   closePanel(); if(!t && !edit) return;
-  if(!sq){ sq = claimAt(w); if(!sq) return; const l=toLocal(squares.get(sq), w); at={x:l.x, y:l.y, size:20}; }
+  if(!sq){ sq = claimAt(w); if(!sq) return; const l=toLocal(squares.get(sq), w); at={x:l.x, y:l.y, size:BIG_TEXT}; }
   sq=rs(sq); const q=squares.get(sq); if(!q) return; mySq=sq;
   if(!t){ if(edit) removeText(q, edit, sq); return; }
   let f=fitText(t, at);
