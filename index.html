@@ -491,7 +491,7 @@ function paintSquare(id, q){
 let bubbles = [];
 // Circle AREA is proportional to views: twice the views, twice the area.
 // The most viewed gets R_MAX; a creation with no views yet is a small dot.
-const R_MAX = 300, R_DOT = 16, GAP = 16;
+const R_MAX = 300, R_DOT = 16, GAP = 30, LABEL_AT = 22;   // a circle shows its views once its radius is 22px on screen
 function layoutBubbles(){
   const ids=[...squares.keys()].filter(id=>squares.get(id).items.length);   // only creations with something in them
   const max=Math.max(0,...ids.map(i=>counts[i]||0));
@@ -548,11 +548,17 @@ function paintBubbles(){
     ctx.beginPath(); ctx.arc(0,0,b.R,0,7); ctx.fillStyle=col.paper; ctx.fill();
     ctx.save(); ctx.clip(); const k=(2*b.R)/S*1.05; ctx.scale(k,k); ctx.translate(-S/2,-S/2); paintItems(q); ctx.restore();
     ctx.lineWidth=(b.top?3:1)/view.s; ctx.strokeStyle=b.top?col.mine:col.edge; ctx.beginPath(); ctx.arc(0,0,b.R,0,7); ctx.stroke();
-    ctx.fillStyle=col.muted; ctx.font=`${12/view.s}px ${getComputedStyle(document.body).fontFamily}`;
-    const u=1/view.s, ey=b.R+13*u; ctx.strokeStyle=col.muted; ctx.lineWidth=1.5*u;
-    ctx.beginPath(); ctx.ellipse(-12*u,ey,8*u,4.5*u,0,0,7); ctx.stroke(); ctx.beginPath(); ctx.arc(-12*u,ey,1.8*u,0,7); ctx.fill();
-    ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillText(String(b.n), 0, ey); ctx.textAlign='center'; ctx.textBaseline='top';
-    if(selBubble===b.id && q.name) ctx.fillText(q.name, 0, ey+12*u);
+    // views and name only when the circle is big on screen (zoomed in), or when tapped
+    const onScreen = b.R*view.s, sel = selBubble===b.id;
+    if(onScreen >= LABEL_AT || sel){
+      ctx.globalAlpha = sel ? 1 : Math.min(1, (onScreen-LABEL_AT)/12 + .15);   // fade in as you get closer
+      ctx.fillStyle=col.muted; ctx.font=`${12/view.s}px ${getComputedStyle(document.body).fontFamily}`;
+      const u=1/view.s, ey=b.R+13*u; ctx.strokeStyle=col.muted; ctx.lineWidth=1.5*u;
+      ctx.beginPath(); ctx.ellipse(-12*u,ey,8*u,4.5*u,0,0,7); ctx.stroke(); ctx.beginPath(); ctx.arc(-12*u,ey,1.8*u,0,7); ctx.fill();
+      ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillText(String(b.n), 0, ey); ctx.textAlign='center'; ctx.textBaseline='top';
+      if(sel && q.name) ctx.fillText(q.name, 0, ey+12*u);
+      ctx.globalAlpha = 1;
+    }
     ctx.restore();
   }
 }
