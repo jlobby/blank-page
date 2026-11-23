@@ -3,10 +3,11 @@ import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 process.env.BLANK_DEV ||= '1';
 const routes = {};
-for (const n of ['events', 'claim', 'act', 'view', 'views', 'admin', 'admin-login', 'config', 'here']) routes['/api/' + n] = (await import(`./api/${n}.js`)).default;
+for (const n of ['events', 'claim', 'act', 'view', 'views', 'admin', 'admin-login', 'config', 'here', 'yesterday']) routes['/api/' + n] = (await import(`./api/${n}.js`)).default;
 http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://x');
   const h = routes[u.pathname];
+  if (u.pathname === '/__dev/day') { process.env.BLANK_FAKE_DAY = u.searchParams.get('d') || ''; return res.end('ok'); } // pretend it is another day
   if (!h && u.pathname.startsWith('/_vercel/')) { res.statusCode = 404; return res.end(); } // analytics exist only on Vercel
   if (!h) {
     const file = u.pathname.slice(1);
