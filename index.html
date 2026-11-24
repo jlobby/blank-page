@@ -307,8 +307,13 @@ function panTo(x, y){ // glide the view so a world point sits mid-screen
 $('reply').onclick = () => {
   if(!reveal) return; const pid=reveal.sq, P=squares.get(pid); reveal=null; $('rev').hidden=true;
   if(!P || pid.startsWith('_')) return;
-  const id = claimAt(freeSpotNear(P), {exact:true, re:pid}); if(!id) return;
-  mode='draw'; ui(); const q=squares.get(id); panTo(q.x, q.y);
+  const spot = freeSpotNear(P);
+  if(mode!=='draw'){                       // text (or browsing): write the reply; it is made when you press ✓
+    if(mode==='move'){ mode='text'; ui(); }
+    panTo(spot.x, spot.y); openPanel({x:24, y:40, size:BIG_TEXT}, null, null, spot, pid); return;
+  }
+  const id = claimAt(spot, {exact:true, re:pid}); if(!id) return;
+  ui(); const q=squares.get(id); panTo(q.x, q.y);
   spillUntil = performance.now()+3500; spillRed=false; draw();   // show where to draw
 };
 function myAt(w, margin=0){ // your topmost creation under a point (margin lets a stroke start just outside the edge)
@@ -580,6 +585,29 @@ function paintBubbles(){
   }
 }
 
+function inkRect(q){ // the ink's box on the page (half sizes), with a little room around it
+  if(!q.items.length) return {cx:q.x, cy:q.y, hw:20, hh:20};
+  const k=inkBox(q.items), c=fromLocal(q,{x:(k.x0+k.x1)/2, y:(k.y0+k.y1)/2});
+  return {cx:c.x, cy:c.y, hw:(k.x1-k.x0)/2+14, hh:(k.y1-k.y0)/2+14};
+}
+function edgeT(R, dx, dy){ // how far along (dx,dy) from the box's centre the line leaves the box
+  const tx = dx ? R.hw/Math.abs(dx) : Infinity, ty = dy ? R.hh/Math.abs(dy) : Infinity;
+  return Math.min(tx, ty);
+}
+function paintReplyLinks(tl, br){ // replies and what they answer, joined by a faint dashed line
+  const u=1/view.s; let any=false;
+  ctx.save(); ctx.strokeStyle=col.muted; ctx.globalAlpha*=.45; ctx.lineWidth=1.25*u; ctx.setLineDash([5*u,6*u]);
+  for(const q of squares.values()){
+    const P = q.re && squares.get(q.re); if(!P || (!q.items.length && !P.items.length)) continue;
+    if(Math.max(q.x,P.x)<tl.x-S || Math.min(q.x,P.x)>br.x+S || Math.max(q.y,P.y)<tl.y-S || Math.min(q.y,P.y)>br.y+S) continue;
+    const A=inkRect(P), B=inkRect(q), dx=B.cx-A.cx, dy=B.cy-A.cy;
+    const ta=edgeT(A,dx,dy), tb=1-edgeT(B,-dx,-dy);          // start and stop just outside each piece of ink
+    if(tb-ta < .02) continue;                                 // too close or overlapping: no line
+    ctx.beginPath(); ctx.moveTo(A.cx+dx*ta, A.cy+dy*ta); ctx.lineTo(A.cx+dx*tb, A.cy+dy*tb); ctx.stroke(); any=true;
+  }
+  ctx.restore();
+  return any;
+}
 function render(){
   raf=0;
   ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.fillStyle=col.desk; ctx.fillRect(0,0,cv.width,cv.height);
@@ -588,6 +616,7 @@ function render(){
   if(net){ paintBubbles(); }
   else{
     const tl=toWorld(0,0), br=toWorld(innerWidth,innerHeight), pad=S;
+    paintReplyLinks(tl, br);
     [...squares].sort((a,b)=>a[1].z-b[1].z).forEach(([id,q])=>{
       if(q.x<tl.x-pad||q.x>br.x+pad||q.y<tl.y-pad||q.y>br.y+pad) return;
       paintSquare(id,q);
@@ -760,9 +789,9 @@ function textAt(q, l){ // own text under a tap, if any
     if(l.x>=m.x-6 && l.x<=m.x+w+6 && l.y>=m.y-6 && l.y<=m.y+h+6) return m; }
   return null;
 }
-function openPanel(at, edit, sq, w){ // sq: the creation it goes in; none yet = make one at w on save
+function openPanel(at, edit, sq, w, re){ // sq: the creation it goes in; none yet = make one at w on save (re: the one it answers)
   closeName();
-  tp={at: at || {x:S/2-60, y:S/2-10, size:BIG_TEXT}, edit, sq, w, ink: edit ? edit.ink : ink};
+  tp={at: at || {x:S/2-60, y:S/2-10, size:BIG_TEXT}, edit, sq, w, re, ink: edit ? edit.ink : ink};
   tpa.value = edit ? edit.text : ''; tpa.style.color = col['ink'+tp.ink];
   $('tpdel').hidden = !edit; $('tp').hidden = false; tpInput(); tpa.focus();
 }
@@ -774,9 +803,10 @@ function tpInput(){
   $('tp').classList.toggle('over', over); if(over) spill(true);
 }
 function savePanel(){
-  if(!tp) return; let {at,edit,sq,w,ink:k}=tp; let t=tpa.value.trim().replace(/\n{3,}/g,'\n\n');
+  if(!tp) return; let {at,edit,sq,w,re,ink:k}=tp; let t=tpa.value.trim().replace(/\n{3,}/g,'\n\n');
   closePanel(); if(!t && !edit) return;
-  if(!sq){ sq = claimAt(w); if(!sq) return; const l=toLocal(squares.get(sq), w); at={x:l.x, y:l.y, size:BIG_TEXT}; }
+  if(!sq && re){ sq = claimAt(w, {exact:true, re}); if(!sq) return; }   // a written reply: placed beside what it answers
+  else if(!sq){ sq = claimAt(w); if(!sq) return; const l=toLocal(squares.get(sq), w); at={x:l.x, y:l.y, size:BIG_TEXT}; }
   sq=rs(sq); const q=squares.get(sq); if(!q) return; mySq=sq;
   if(!t){ if(edit) removeText(q, edit, sq); return; }
   let f=fitText(t, at);
